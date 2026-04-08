@@ -1,0 +1,59 @@
+# =============================================================================
+# .gitignore — local-concept-sliders
+# =============================================================================
+
+# --- Pesi LoRA / sliders trainati (grandi, rigenerabili dal training) ---
+*.pt
+*.safetensors
+
+# --- SAM / pretrained models (multi-GB, scaricabili) ---
+*.pth
+mask_SAM/checkpoints/
+
+# --- Logs SLURM (stdout/stderr) ---
+# Le cartelle logs/ esistono nella repo (con .gitkeep) ma il loro contenuto no.
+**/logs/*
+!**/logs/.gitkeep
+
+# --- Cache PEFT (auto-generata, ricreabile) ---
+**/_peft_cache/
+
+# --- Config personali HPC (ognuno ha il suo, NON committare) ---
+tools/set_slurms.sh
+tools/pull_config.sh
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# --- Virtual environments ---
+.venv*/
+venv*/
+env/
+ENV/
+
+# --- HuggingFace cache locale (se mai dovesse finire in repo) ---
+.hf_cache/
+hf_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- macOS junk ---
+.DS_Store
+._*
+
+# --- Editor / IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- File temporanei ---
+*.bak
+*.tmp
