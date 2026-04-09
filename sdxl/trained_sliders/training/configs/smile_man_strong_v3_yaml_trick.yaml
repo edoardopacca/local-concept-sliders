@@ -1,0 +1,57 @@
+# Training config for smile_man_strong_v3_yaml_trick.
+#
+# Paired with configs/smile_man_strong_v3_preserve_woman.yaml for a
+# controlled comparison of two preservation mechanisms. All hyperparams
+# below are byte-identical to v3_preserve_woman (which is itself
+# byte-identical to v2_guidance4 apart from save.name). The ONE
+# variable changed between v3_yaml_trick and v3_preserve_woman:
+#
+#   v3_yaml_trick     → upstream train.py, preservation via Eq.7
+#                       degeneration baked into the prompts YAML
+#                       (10 man + 10 woman entries sampled uniformly)
+#
+#   v3_preserve_woman → forked train_with_preservation.py, explicit
+#                       two-term loss = loss_enhance_on_man
+#                                       + lambda_pres * loss_pres_on_woman
+#                       (both computed every iteration)
+#
+# Everything else (model, rank, alpha, noxattn, 1000 iter, lr 2e-4,
+# AdamW, bf16, ddim, 50 denoising steps, xformers) is identical across
+# the three configs (v2_guidance4, v3_yaml_trick, v3_preserve_woman).
+# This lets us attribute output differences to the preservation
+# mechanism alone.
+
+prompts_file: "sdxl/trained_sliders/training/prompts/old_prompt/smile_man_strong_v3_yaml_trick.yaml"
+
+pretrained_model:
+  name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+  v2: false
+  v_pred: false
+
+network:
+  type: "c3lier"
+  rank: 4
+  alpha: 1.0
+  training_method: "noxattn"
+
+train:
+  precision: "bfloat16"
+  noise_scheduler: "ddim"
+  iterations: 1000
+  lr: 0.0002
+  optimizer: "AdamW"
+  lr_scheduler: "constant"
+  max_denoising_steps: 50
+
+save:
+  name: "smile_man_strong_v3_yaml_trick"
+  path: "sdxl/trained_sliders/sliders"
+  per_steps: 500
+  precision: "bfloat16"
+
+logging:
+  use_wandb: false
+  verbose: false
+
+other:
+  use_xformers: true

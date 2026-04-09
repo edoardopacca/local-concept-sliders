@@ -1,0 +1,45 @@
+# Training config for smile_man_strong_v2_guidance4.
+#
+# Twin of configs/smile_man_strong_v2.yaml. Only two fields differ:
+#   - prompts_file → points at the _guidance4 prompts YAML
+#   - save.name    → output folder separated from gs=1 variant
+# Everything else (rank, alpha, network type, training_method, iterations,
+# lr, optimizer, scheduler, precision, noise_scheduler) is byte-identical
+# to v2/gs=1. This is a controlled ablation: the only variable changed
+# between v2 (gs=1) and v2_guidance4 is the per-entry guidance_scale
+# in the prompts file. Training cost and all other knobs are identical.
+
+prompts_file: "sdxl/trained_sliders/training/prompts/old_prompt/smile_man_strong_v2_guidance4.yaml"
+
+pretrained_model:
+  name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+  v2: false
+  v_pred: false
+
+network:
+  type: "c3lier"
+  rank: 4
+  alpha: 1.0
+  training_method: "noxattn"
+
+train:
+  precision: "bfloat16"
+  noise_scheduler: "ddim"
+  iterations: 1000
+  lr: 0.0002
+  optimizer: "AdamW"
+  lr_scheduler: "constant"
+  max_denoising_steps: 50
+
+save:
+  name: "smile_man_strong_v2_guidance4"
+  path: "sdxl/trained_sliders/sliders"
+  per_steps: 500
+  precision: "bfloat16"
+
+logging:
+  use_wandb: false
+  verbose: false
+
+other:
+  use_xformers: true

@@ -1,0 +1,79 @@
+# Preservation set for the v3_preserve_woman slider.
+#
+# These entries are consumed by train_with_preservation.py, NOT by the
+# vanilla train.py. The training script treats this file specially: only
+# the `target` field is read. positive/unconditional/neutral are ignored
+# in the preservation branch of the loss — they are present only because
+# pydantic PromptSettings requires the 4-field shape.
+#
+# Semantics of the preservation loss (per iteration, one entry sampled at
+# random from this list):
+#
+#   denoise a batch from pure noise down to timestep t, conditioned on
+#   `target`, WITH the current LoRA on. Then at that intermediate state,
+#   compute two noise predictions for the same target prompt:
+#     (a) eps_with_LoRA = UNet + current LoRA weights
+#     (b) eps_without_LoRA = UNet with LoRA disabled
+#   loss_preservation = MSE(eps_with_LoRA, eps_without_LoRA.detach()).
+#
+# This penalizes ΔW from doing *anything* on the "woman" concept — at
+# every timestep, for every resolution-independent feature channel the
+# UNet activates for this prompt. Combined with the enhance loss on the
+# man YAML entries, the LoRA is forced to (i) push the smile direction on
+# man-activations, AND (ii) stay close to zero on woman-activations. The
+# two terms are combined via the --lambda_pres flag passed to the
+# training script.
+#
+# One entry per ethnicity. No "grinning / scowling" variant needed: the
+# expression words don't matter here, only the target noun phrase whose
+# UNet activations we want the LoRA to leave unchanged.
+
+- target: "white woman"
+  positive: "white woman"
+  unconditional: "white woman"
+  neutral: "white woman"
+  action: "enhance"
+  guidance_scale: 1
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "black woman"
+  positive: "black woman"
+  unconditional: "black woman"
+  neutral: "black woman"
+  action: "enhance"
+  guidance_scale: 1
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "asian woman"
+  positive: "asian woman"
+  unconditional: "asian woman"
+  neutral: "asian woman"
+  action: "enhance"
+  guidance_scale: 1
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "hispanic woman"
+  positive: "hispanic woman"
+  unconditional: "hispanic woman"
+  neutral: "hispanic woman"
+  action: "enhance"
+  guidance_scale: 1
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "indian woman"
+  positive: "indian woman"
+  unconditional: "indian woman"
+  neutral: "indian woman"
+  action: "enhance"
+  guidance_scale: 1
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1

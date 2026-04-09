@@ -1,0 +1,55 @@
+# Training config for smile_man_strong_v3_preserve_woman.
+#
+# Twin of configs/smile_man_strong_v2_guidance4.yaml. Only two things differ:
+#   - prompts_file            → the man-anchored enhance set (identical to v2_guidance4)
+#   - prompts_file_woman      → NEW, the woman-anchored preservation set
+#   - save.name               → v3_preserve_woman, so outputs don't collide
+#
+# The additional knob is passed at CLI: --lambda_pres (weight on the
+# preservation term). This config itself does not encode lambda_pres —
+# the SLURM job sets it explicitly so we can sweep without editing YAML.
+#
+# Everything else (rank=4, alpha=1.0, training_method=noxattn,
+# iterations=1000, lr=2e-4, optimizer=AdamW, precision=bfloat16) is
+# byte-identical to v2_guidance4. The two variables changed between
+# v2_guidance4 and v3_preserve_woman are:
+#   (1) the added preservation loss term,
+#   (2) the λ coefficient on it.
+# All other factors are held constant to isolate the effect of the new
+# loss on localization (man gets smile, woman stays fixed).
+
+prompts_file: "sdxl/trained_sliders/training/prompts/old_prompt/smile_man_strong_v2_guidance4.yaml"
+prompts_file_woman: "sdxl/trained_sliders/training/prompts/old_prompt/preserve_woman.yaml"
+
+pretrained_model:
+  name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+  v2: false
+  v_pred: false
+
+network:
+  type: "c3lier"
+  rank: 4
+  alpha: 1.0
+  training_method: "noxattn"
+
+train:
+  precision: "bfloat16"
+  noise_scheduler: "ddim"
+  iterations: 1000
+  lr: 0.0002
+  optimizer: "AdamW"
+  lr_scheduler: "constant"
+  max_denoising_steps: 50
+
+save:
+  name: "smile_man_strong_v3_preserve_woman"
+  path: "sdxl/trained_sliders/sliders"
+  per_steps: 500
+  precision: "bfloat16"
+
+logging:
+  use_wandb: false
+  verbose: false
+
+other:
+  use_xformers: true

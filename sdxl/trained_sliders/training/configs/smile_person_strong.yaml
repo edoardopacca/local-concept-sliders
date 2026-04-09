@@ -1,0 +1,42 @@
+# Training config for the "smile_person_strong" experiment.
+#
+# Byte-identical to smile_man_strong.yaml except for `prompts_file`, `save.name`
+# and `save.path`. The two runs share the exact same hyperparameters so that
+# the ONLY difference between the resulting LoRAs is the anchor token in the
+# prompts YAML (see prompts/smile_person_strong.yaml). This isolates the
+# localization variable.
+
+prompts_file: "sdxl/trained_sliders/training/prompts/old_prompt/smile_person_strong.yaml"
+
+pretrained_model:
+  name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+  v2: false
+  v_pred: false
+
+network:
+  type: "c3lier"
+  rank: 4
+  alpha: 1.0
+  training_method: "noxattn"
+
+train:
+  precision: "bfloat16"
+  noise_scheduler: "ddim"
+  iterations: 1000
+  lr: 0.0002
+  optimizer: "AdamW"
+  lr_scheduler: "constant"
+  max_denoising_steps: 50
+
+save:
+  name: "smile_person_strong"
+  path: "sdxl/trained_sliders/sliders"
+  per_steps: 500
+  precision: "bfloat16"
+
+logging:
+  use_wandb: false
+  verbose: false
+
+other:
+  use_xformers: true
