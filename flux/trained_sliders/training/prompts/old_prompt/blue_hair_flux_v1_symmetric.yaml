@@ -1,0 +1,106 @@
+# blue_hair_flux_v1_symmetric.yaml
+#
+# Blue-hair slider su Flux nel SETTING GENERALE del paper Concept Sliders
+# (Gandikota et al. 2023):
+#   - 10 entries: 5 uomini x etnie + 5 donne x etnie
+#   - TUTTE enhance (nessun YAML trick di preservation)
+#   - Simmetrico per genere
+#
+# SCELTA PROMPT:
+#   - positive      = "persona, blue hair"
+#   - unconditional = "persona, natural hair color"
+#   - neutral       = "persona"
+#
+#   Razionale: Flux non genera capelli blu nativamente. L'unconditional
+#   "natural hair color" ancora la direzione negativa al colore naturale
+#   (generico) senza forzare un colore specifico (come "red hair" farebbe).
+#   Cosi' il gradiente di training e' robusto (differenza pos/uncond ben
+#   definita sul piano colore), ma scale negative producono capelli
+#   realistici tipici invece di un singolo colore forzato.
+#
+#   Comportamento atteso:
+#     - scale positive -> capelli blu (enhance)
+#     - scale zero     -> capelli default di Flux per il soggetto
+#     - scale negative -> spinta verso colori naturali generici (se l'input
+#                         era gia' naturale, poco effetto; se era vicino al
+#                         blu, lo riporta a naturale)
+#
+# IPERPARAMETRI:
+#   - guidance_scale: 4 (paper)
+#   - resolution: 512
+#   - rank 16, xattn, alpha 1
+# ============================================================
+
+# === 5 enhance MALE entries ===
+
+- target: "male white person"
+  positive: "male white person, blue hair"
+  unconditional: "male white person, natural hair color"
+  neutral: "male white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male black person"
+  positive: "male black person, blue hair"
+  unconditional: "male black person, natural hair color"
+  neutral: "male black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male indian person"
+  positive: "male indian person, blue hair"
+  unconditional: "male indian person, natural hair color"
+  neutral: "male indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male asian person"
+  positive: "male asian person, blue hair"
+  unconditional: "male asian person, natural hair color"
+  neutral: "male asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male hispanic person"
+  positive: "male hispanic person, blue hair"
+  unconditional: "male hispanic person, natural hair color"
+  neutral: "male hispanic person"
+  guidance_scale: 4
+  resolution: 512
+
+# === 5 enhance FEMALE entries ===
+
+- target: "female white person"
+  positive: "female white person, blue hair"
+  unconditional: "female white person, natural hair color"
+  neutral: "female white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female black person"
+  positive: "female black person, blue hair"
+  unconditional: "female black person, natural hair color"
+  neutral: "female black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female indian person"
+  positive: "female indian person, blue hair"
+  unconditional: "female indian person, natural hair color"
+  neutral: "female indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female asian person"
+  positive: "female asian person, blue hair"
+  unconditional: "female asian person, natural hair color"
+  neutral: "female asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female hispanic person"
+  positive: "female hispanic person, blue hair"
+  unconditional: "female hispanic person, natural hair color"
+  neutral: "female hispanic person"
+  guidance_scale: 4
+  resolution: 512

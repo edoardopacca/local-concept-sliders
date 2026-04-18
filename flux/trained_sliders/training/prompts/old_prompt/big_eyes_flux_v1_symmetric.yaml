@@ -1,0 +1,96 @@
+# big_eyes_flux_v1_symmetric.yaml
+#
+# Big-eyes slider su Flux nel SETTING GENERALE del paper Concept Sliders
+# (Gandikota et al. 2023):
+#   - 10 entries: 5 uomini x etnie + 5 donne x etnie
+#   - TUTTE enhance (nessun YAML trick di preservation)
+#   - Simmetrico per genere (big/small eyes deve applicarsi a chiunque)
+#
+# USO: slider "generico" di dimensione occhi. A scale positive gli occhi si
+#   allargano, a scale negative si restringono/socchiudono.
+#
+# PROMPT STRUCTURE (dal paper):
+#   target        = soggetto base
+#   positive      = soggetto + attributo (big eyes)
+#   unconditional = soggetto + counter-attributo (small eyes)
+#   neutral       = soggetto base (uguale a target)
+#
+# IPERPARAMETRI:
+#   - guidance_scale: 4 (valore del paper)
+#   - resolution: 512
+#   - rank 16, xattn, alpha 1 (convenzione nostra per Flux)
+# ============================================================
+
+# === 5 enhance MALE entries ===
+
+- target: "male white person"
+  positive: "male white person, big eyes, large eyes"
+  unconditional: "male white person, small eyes, narrow eyes"
+  neutral: "male white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male black person"
+  positive: "male black person, big eyes, large eyes"
+  unconditional: "male black person, small eyes, narrow eyes"
+  neutral: "male black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male indian person"
+  positive: "male indian person, big eyes, large eyes"
+  unconditional: "male indian person, small eyes, narrow eyes"
+  neutral: "male indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male asian person"
+  positive: "male asian person, big eyes, large eyes"
+  unconditional: "male asian person, small eyes, narrow eyes"
+  neutral: "male asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male hispanic person"
+  positive: "male hispanic person, big eyes, large eyes"
+  unconditional: "male hispanic person, small eyes, narrow eyes"
+  neutral: "male hispanic person"
+  guidance_scale: 4
+  resolution: 512
+
+# === 5 enhance FEMALE entries ===
+
+- target: "female white person"
+  positive: "female white person, big eyes, large eyes"
+  unconditional: "female white person, small eyes, narrow eyes"
+  neutral: "female white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female black person"
+  positive: "female black person, big eyes, large eyes"
+  unconditional: "female black person, small eyes, narrow eyes"
+  neutral: "female black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female indian person"
+  positive: "female indian person, big eyes, large eyes"
+  unconditional: "female indian person, small eyes, narrow eyes"
+  neutral: "female indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female asian person"
+  positive: "female asian person, big eyes, large eyes"
+  unconditional: "female asian person, small eyes, narrow eyes"
+  neutral: "female asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female hispanic person"
+  positive: "female hispanic person, big eyes, large eyes"
+  unconditional: "female hispanic person, small eyes, narrow eyes"
+  neutral: "female hispanic person"
+  guidance_scale: 4
+  resolution: 512

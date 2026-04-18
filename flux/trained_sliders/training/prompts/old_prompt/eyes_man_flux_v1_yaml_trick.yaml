@@ -1,0 +1,111 @@
+# eyes_man_flux_v1_yaml_trick.yaml
+#
+# Concept slider "occhi grandi vs piccoli" su uomo, con donna in
+# preservation YAML-trick. Analogo a v3 smile / v1 age.
+#
+# SCOPO DIAGNOSTICO (attribute-difficulty spectrum):
+#   Eyes e' il caso piu' estremo di attributo LOCALIZZATO:
+#     - feature spazialmente piccola (pochi pixel per occhio)
+#     - semantica stabile e non diffusa (a differenza di "smile" che e'
+#       un'espressione globale del volto, o "age" che modifica rughe,
+#       capelli, postura)
+#     - token "eyes" si lega a una singola region con firma visiva netta
+#
+#   Ipotesi sullo spectrum (da meno a piu' bind-able):
+#     smile (globale, diffuso) < age (misto, medio-locale) < eyes (locale)
+#
+#   Prediction: se lo spectrum e' reale,
+#     - isolated woman: preservation banale (come per age) -> giovane
+#     - couple @ scale 1.0: binding uomo-only, donna intatta
+#     - couple @ scale 1.5: leakage minore o assente rispetto ad age
+#
+#   Se invece eyes mostra leakage simile ad age/smile, abbiamo evidenza che
+#   il problema e' structural (Flux xattn non binda adjective->entity a
+#   prescindere da localizzabilita').
+#
+# STRUTTURA identica a v3 smile / v1 age:
+#   - 5 enhance-man: direzione eyes+ (positive=big eyes, uncond=small eyes)
+#   - 5 preservation-woman: YAML trick (target==positive==uncond==neutral)
+#
+# IPERPARAMETRI identici a v3/v4/age per comparabilita':
+#   - guidance_scale: 2
+#   - resolution: 512
+# ============================================================
+
+# === 5 enhance-man entries: direzione big eyes ===
+
+- target: "a man"
+  positive: "a man with big eyes, wide eyes, large prominent eyes"
+  unconditional: "a man with small eyes, narrow eyes, squinting eyes"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a photo of a man"
+  positive: "a photo of a man with big eyes, wide large eyes"
+  unconditional: "a photo of a man with small narrow eyes"
+  neutral: "a photo of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a portrait of a man"
+  positive: "a portrait of a man with big eyes, wide prominent eyes"
+  unconditional: "a portrait of a man with small narrow eyes"
+  neutral: "a portrait of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a man looking at camera"
+  positive: "a man with big wide eyes looking at camera"
+  unconditional: "a man with small narrow eyes looking at camera"
+  neutral: "a man looking at camera"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "an image of a man"
+  positive: "an image of a man with big eyes, large wide eyes"
+  unconditional: "an image of a man with small eyes, narrow squinting eyes"
+  neutral: "an image of a man"
+  guidance_scale: 2
+  resolution: 512
+
+# === 5 preservation-woman entries: YAML trick ===
+# target == positive == unconditional == neutral -> Eq.7 degenera a
+# preservation pura. La LoRA deve produrre stessa velocity del baseline
+# su qualsiasi prompt "a woman (context)": zero segnale di direzione, solo
+# regolarizzazione anti-leakage.
+
+- target: "a woman"
+  positive: "a woman"
+  unconditional: "a woman"
+  neutral: "a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a photo of a woman"
+  positive: "a photo of a woman"
+  unconditional: "a photo of a woman"
+  neutral: "a photo of a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a portrait of a woman"
+  positive: "a portrait of a woman"
+  unconditional: "a portrait of a woman"
+  neutral: "a portrait of a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a woman looking at camera"
+  positive: "a woman looking at camera"
+  unconditional: "a woman looking at camera"
+  neutral: "a woman looking at camera"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "an image of a woman"
+  positive: "an image of a woman"
+  unconditional: "an image of a woman"
+  neutral: "an image of a woman"
+  guidance_scale: 2
+  resolution: 512

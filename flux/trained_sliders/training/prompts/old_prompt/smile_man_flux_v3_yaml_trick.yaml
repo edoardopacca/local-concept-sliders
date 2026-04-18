@@ -1,0 +1,113 @@
+# Flux port di SDXL_train/prompts/smile_man_strong_v3_yaml_trick.yaml
+# Versione slim: 5 man entries + 5 woman entries (vs 10+10 di SDXL).
+#
+# Rationale per slim:
+#   - Su T5 (Flux) la pressione di diversita' etnica e' minore rispetto a
+#     CLIP (SDXL), dove le 5 etnie servivano per forzare attivazioni
+#     differenti. T5 e' bidirezionale e semanticamente piu' ricco; il
+#     concetto "man" attiva gia' un set ampio di features.
+#   - 5+5 vs 10+10 dimezza il tempo di pre-compute embeddings e riduce
+#     l'overhead del dedup cache. Il ratio enhance:preservation resta
+#     50:50 (analogo λ_pres=1.0).
+#   - Se il setup slim non basta, si puo' fare v4 con ethnicities o con
+#     piu' phrasing variants.
+#
+# Come funziona la degeneration sulle woman entries:
+#
+#   Eq.7 Flux:  gt = neutral + eta * (positive - unconditional)
+#                 loss = MSE(LoRA_on(target), gt)
+#
+#   Se target == positive == unconditional == neutral (= "a woman"):
+#     positive - unconditional = 0
+#     gt = neutral_pred = target_pred (forward LoRA-off su "a woman")
+#     loss = MSE(LoRA_on("a woman"), LoRA_off("a woman"))
+#   => loss = preservation pura, spinge LoRA a zero-change sui pattern
+#      attivati da "woman" (e variants).
+#
+# Nota: guidance_scale=2 per man e' dal smoke-tested Flux default.
+# SDXL v3_yaml_trick usava 4; Flux con eta=4 non e' mai stato validato
+# sul nostro stack (potrebbe destabilizzare via gt-normalization).
+#
+# ============================================================
+# MAN entries (5) — real enhance, gradient drives smile direction.
+# 5 framing/phrasing varianti per lo stesso soggetto "man".
+# ============================================================
+
+- target: "a man"
+  positive: "a man, smiling, happy face, big smile"
+  unconditional: "a man, frowning, grumpy, sad"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a man"
+  positive: "a man, grinning, joyful expression, toothy smile"
+  unconditional: "a man, scowling, unhappy expression, mouth closed"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "portrait of a man"
+  positive: "portrait of a man, smiling, happy face, big smile"
+  unconditional: "portrait of a man, frowning, grumpy, sad"
+  neutral: "portrait of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "photo of a man"
+  positive: "photo of a man, smiling, happy face, big smile"
+  unconditional: "photo of a man, frowning, grumpy, sad"
+  neutral: "photo of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a young man"
+  positive: "a young man, smiling, happy face, big smile"
+  unconditional: "a young man, frowning, grumpy, sad"
+  neutral: "a young man"
+  guidance_scale: 2
+  resolution: 512
+
+# ============================================================
+# WOMAN entries (5) — Eq.7 degenerata -> preservation pura.
+# target == positive == unconditional == neutral per ciascuna entry.
+# 5 noun-phrase varianti per coprire un set ampio di attivazioni
+# T5 del concetto "woman" (non solo il token bare "woman").
+# guidance_scale irrilevante (positive - unconditional = 0 sempre);
+# lo lasciamo a 1 per chiarezza.
+# ============================================================
+
+- target: "a woman"
+  positive: "a woman"
+  unconditional: "a woman"
+  neutral: "a woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a young woman"
+  positive: "a young woman"
+  unconditional: "a young woman"
+  neutral: "a young woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "portrait of a woman"
+  positive: "portrait of a woman"
+  unconditional: "portrait of a woman"
+  neutral: "portrait of a woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "photo of a woman"
+  positive: "photo of a woman"
+  unconditional: "photo of a woman"
+  neutral: "photo of a woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a lady"
+  positive: "a lady"
+  unconditional: "a lady"
+  neutral: "a lady"
+  guidance_scale: 1
+  resolution: 512

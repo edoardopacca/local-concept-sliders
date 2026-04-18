@@ -1,0 +1,103 @@
+# vangogh_flux_v1.yaml
+#
+# Style slider: direzione realismo -> stile Van Gogh.
+# Primo style slider del progetto (finora solo attribute sliders: smile,
+# age, eyes).
+#
+# SCOPO: baseline "easy case" per lo spectrum diagnostico.
+#   Gli style sliders sono noti per funzionare bene su diffusion models
+#   perche' modificano GLOBALMENTE tutta l'immagine (textures, palette,
+#   brushstrokes) senza bisogno di binding entity-specifico. Questo e'
+#   fondamentalmente diverso dagli attribute sliders che richiedono
+#   localizzazione su un soggetto.
+#
+# PREDIZIONE: vangogh_flux funziona nettamente meglio di smile/age/eyes
+#   in termini di applicazione pulita, perche' non c'e' nessun problema
+#   di binding da risolvere: lo stile si applica a tutta l'immagine in
+#   modo globale.
+#
+# CONFRONTO ATTESO per tesi:
+#   - style slider (van gogh):  baseline alto, funziona bene
+#   - subject slider simmetrico (smile v5): medio, serve direzione pulita
+#   - subject slider asimmetrico (smile v3/age v1): leakage problem
+#
+# PROMPT: 10 scene diverse (landscape, portrait, still life, ecc.) con
+#   positive="in style of Van Gogh, impasto, swirling brushstrokes" e
+#   unconditional="photograph, photorealistic, realistic". Target e
+#   neutral sono uguali, senza descrittore di stile (punto neutro).
+#
+# IPERPARAMETRI:
+#   - guidance_scale: 4 (match paper originale)
+#   - resolution: 512
+#   - rank/alpha/method: rank 16, xattn, alpha 1 (adattamento Flux)
+# ============================================================
+
+- target: "a landscape"
+  positive: "a landscape in the style of Van Gogh, impasto, swirling brushstrokes, vibrant colors, post-impressionist painting"
+  unconditional: "a landscape, photograph, photorealistic, realistic"
+  neutral: "a landscape"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a portrait of a person"
+  positive: "a portrait of a person in the style of Van Gogh, impasto, expressive brushstrokes, post-impressionist"
+  unconditional: "a portrait of a person, photograph, photorealistic, realistic"
+  neutral: "a portrait of a person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a still life with fruit"
+  positive: "a still life with fruit in the style of Van Gogh, thick impasto, swirling brushstrokes, vibrant colors"
+  unconditional: "a still life with fruit, photograph, photorealistic, realistic"
+  neutral: "a still life with fruit"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a wheat field"
+  positive: "a wheat field in the style of Van Gogh, swirling sky, expressive brushstrokes, post-impressionist painting"
+  unconditional: "a wheat field, photograph, photorealistic, realistic"
+  neutral: "a wheat field"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a starry night sky"
+  positive: "a starry night sky in the style of Van Gogh, swirling stars, impasto, vibrant blue and yellow, post-impressionist"
+  unconditional: "a starry night sky, photograph, photorealistic, realistic"
+  neutral: "a starry night sky"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a cafe terrace at night"
+  positive: "a cafe terrace at night in the style of Van Gogh, warm yellow light, expressive brushstrokes, post-impressionist painting"
+  unconditional: "a cafe terrace at night, photograph, photorealistic, realistic"
+  neutral: "a cafe terrace at night"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a cypress tree"
+  positive: "a cypress tree in the style of Van Gogh, swirling flame-like shape, impasto, post-impressionist painting"
+  unconditional: "a cypress tree, photograph, photorealistic, realistic"
+  neutral: "a cypress tree"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a village street"
+  positive: "a village street in the style of Van Gogh, thick impasto, expressive brushstrokes, vibrant colors, post-impressionist"
+  unconditional: "a village street, photograph, photorealistic, realistic"
+  neutral: "a village street"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a vase of flowers"
+  positive: "a vase of flowers in the style of Van Gogh, sunflowers, impasto, vibrant yellow, expressive brushstrokes"
+  unconditional: "a vase of flowers, photograph, photorealistic, realistic"
+  neutral: "a vase of flowers"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "a mountain view"
+  positive: "a mountain view in the style of Van Gogh, swirling sky, thick impasto, post-impressionist painting, vibrant colors"
+  unconditional: "a mountain view, photograph, photorealistic, realistic"
+  neutral: "a mountain view"
+  guidance_scale: 4
+  resolution: 512

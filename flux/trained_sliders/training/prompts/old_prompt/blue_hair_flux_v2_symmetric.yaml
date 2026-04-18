@@ -1,0 +1,121 @@
+# blue_hair_flux_v2_symmetric.yaml
+#
+# Blue-hair slider v2 - FIX del shortcut learning di v1.
+#
+# PROBLEMA DI v1 (confermato visivamente su scale 0/2/3/5):
+#   Lo slider imparava "asian appearance" invece di "blue hair color".
+#   A scale=5 la donna diventava pienamente asiatica con capelli ancora
+#   castano scuri. Nessun blu in nessuna scale.
+#
+# DIAGNOSI:
+#   Nel training set di Flux, i token "blue hair" sono sovra-rappresentati
+#   in contesti anime/manga/cosplay/east-asian aesthetic. Il LoRA rank 16
+#   ha preso la scorciatoia statistica dominante (asian aesthetic) invece
+#   del concept puro (colore capelli), che nel sottospazio ha varianza
+#   minore.
+#
+# FIX v2 - TRE DISAMBIGUANTI:
+#
+#   1) positive "hair dyed blue, bright blue hair color"
+#      -> inquadra il blu come TINTURA applicata, non come estetica anime.
+#         "dyed" e' un termine tipicamente fotografico/realistico.
+#
+#   2) "realistic photograph, natural skin" in positive E unconditional
+#      -> sopprime il bias "anime-style" che affliggeva v1. Visto che e'
+#         presente in ENTRAMBI i prompt, il LoRA non puo' usarlo come
+#         componente della direzione (positive - unconditional = 0 sulla
+#         componente "photograph-ness").
+#
+#   3) unconditional "natural brown hair" (al posto di "natural hair color"
+#      vago di v1)
+#      -> direzione specifica sul piano colore. Il gradiente punta a
+#         "blu vs marrone" invece che a "blu vs generic natural", che era
+#         troppo ambiguo.
+#
+# Il "natural brown hair" nell'uncond non rende lo slider inutilizzabile a
+# scale 0/negative: neutral e' gia' "persona" senza menzione, quindi scale 0
+# produce i capelli default di Flux; scale negative dara' solo un lieve
+# shift verso marrone scuro.
+#
+# USO ATTESO:
+#   - scale positive -> capelli blu realistici (NON anime)
+#   - scale zero     -> capelli default di Flux
+#   - scale negative -> lieve virata verso capelli castano scuri
+#
+# IPERPARAMETRI: identici a v1 (rank 16, alpha 1, xattn, 500 step, lr 0.002,
+# guidance 4, res 512). Cosi' l'unica variabile e' il prompt design.
+# ============================================================
+
+# === 5 enhance MALE entries ===
+
+- target: "male white person"
+  positive: "male white person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "male white person, natural brown hair, realistic photograph, natural skin"
+  neutral: "male white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male black person"
+  positive: "male black person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "male black person, natural brown hair, realistic photograph, natural skin"
+  neutral: "male black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male indian person"
+  positive: "male indian person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "male indian person, natural brown hair, realistic photograph, natural skin"
+  neutral: "male indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male asian person"
+  positive: "male asian person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "male asian person, natural brown hair, realistic photograph, natural skin"
+  neutral: "male asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male hispanic person"
+  positive: "male hispanic person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "male hispanic person, natural brown hair, realistic photograph, natural skin"
+  neutral: "male hispanic person"
+  guidance_scale: 4
+  resolution: 512
+
+# === 5 enhance FEMALE entries ===
+
+- target: "female white person"
+  positive: "female white person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "female white person, natural brown hair, realistic photograph, natural skin"
+  neutral: "female white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female black person"
+  positive: "female black person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "female black person, natural brown hair, realistic photograph, natural skin"
+  neutral: "female black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female indian person"
+  positive: "female indian person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "female indian person, natural brown hair, realistic photograph, natural skin"
+  neutral: "female indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female asian person"
+  positive: "female asian person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "female asian person, natural brown hair, realistic photograph, natural skin"
+  neutral: "female asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female hispanic person"
+  positive: "female hispanic person, hair dyed blue, bright blue hair color, realistic photograph, natural skin"
+  unconditional: "female hispanic person, natural brown hair, realistic photograph, natural skin"
+  neutral: "female hispanic person"
+  guidance_scale: 4
+  resolution: 512

@@ -1,0 +1,104 @@
+# smile_flux_v5_symmetric.yaml
+#
+# Smile slider su Flux nel SETTING DEL PAPER ORIGINALE (Concept Sliders,
+# Gandikota et al. 2023):
+#   - 10 entries: 5 uomini x etnie + 5 donne x etnie
+#   - TUTTE enhance (nessun YAML trick di preservation)
+#   - Simmetrico per genere (il sorriso si deve applicare a chiunque)
+#
+# SCOPO: baseline di riferimento per lo spectrum diagnostico.
+#   - v3/v4/age/eyes: asymmetric (enhance uomo + preservation donna),
+#     testano entity-binding -> leakage problem.
+#   - v5 symmetric: NESSUN vincolo di binding, il sorriso deve andare su
+#     tutti. Se anche questo fallisce, il problema non e' il binding ma
+#     e' la capacita' generale di Flux+LoRA xattn di imparare uno slider.
+#
+# USO DELLO SLIDER: slider di sorriso "generico" -> a scale alte fa
+#   sorridere tutti i soggetti nell'immagine, a scale negative li imbronce.
+#   Questo e' il comportamento ATTESO e corretto del paper originale.
+#
+# PROMPT: forma del paper ("male white person" / "female white person")
+#   per usare lo STESSO template semantico su cui e' stato validato in
+#   SDXL. Non ci interessa comparabilita' con v3/v4 in termini di prompt
+#   (quelli usavano "a man" / "a woman"), qui replichiamo il paper.
+#
+# IPERPARAMETRI:
+#   - guidance_scale: 4 (valore del paper, NON 2 di v3/v4)
+#   - resolution: 512
+#   - rank/alpha/method: cablati in CLI come per tutti i nostri run
+#     (rank 16, xattn, alpha 1 - adattamento Flux del paper che usa rank 4)
+# ============================================================
+
+# === 5 enhance MALE entries ===
+
+- target: "male white person"
+  positive: "male white person, smiling, happy face, big smile"
+  unconditional: "male white person, frowning, grumpy, sad"
+  neutral: "male white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male black person"
+  positive: "male black person, smiling, happy face, big smile"
+  unconditional: "male black person, frowning, grumpy, sad"
+  neutral: "male black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male indian person"
+  positive: "male indian person, smiling, happy face, big smile"
+  unconditional: "male indian person, frowning, grumpy, sad"
+  neutral: "male indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male asian person"
+  positive: "male asian person, smiling, happy face, big smile"
+  unconditional: "male asian person, frowning, grumpy, sad"
+  neutral: "male asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male hispanic person"
+  positive: "male hispanic person, smiling, happy face, big smile"
+  unconditional: "male hispanic person, frowning, grumpy, sad"
+  neutral: "male hispanic person"
+  guidance_scale: 4
+  resolution: 512
+
+# === 5 enhance FEMALE entries ===
+
+- target: "female white person"
+  positive: "female white person, smiling, happy face, big smile"
+  unconditional: "female white person, frowning, grumpy, sad"
+  neutral: "female white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female black person"
+  positive: "female black person, smiling, happy face, big smile"
+  unconditional: "female black person, frowning, grumpy, sad"
+  neutral: "female black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female indian person"
+  positive: "female indian person, smiling, happy face, big smile"
+  unconditional: "female indian person, frowning, grumpy, sad"
+  neutral: "female indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female asian person"
+  positive: "female asian person, smiling, happy face, big smile"
+  unconditional: "female asian person, frowning, grumpy, sad"
+  neutral: "female asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female hispanic person"
+  positive: "female hispanic person, smiling, happy face, big smile"
+  unconditional: "female hispanic person, frowning, grumpy, sad"
+  neutral: "female hispanic person"
+  guidance_scale: 4
+  resolution: 512

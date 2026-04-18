@@ -1,0 +1,114 @@
+# age_man_flux_v1_yaml_trick.yaml
+#
+# Analogo esatto di smile_man_flux_v3_yaml_trick.yaml ma con
+# attributo "eta'" (old vs young) al posto di "smile".
+#
+# SCOPO DIAGNOSTICO:
+#   Verificare se il leakage osservato su smile v3/v4 (sorriso che
+#   finisce anche sulla donna in immagini composite) e' attribute-
+#   specific (smile ha qualcosa di speciale) o STRUCTURAL (qualsiasi
+#   concept slider asymmetric su Flux subisce leakage).
+#
+#   Baseline di stamattina ha mostrato che Flux NON fa binding
+#   adjective->noun: in "a smiling man and a woman" sorridono entrambi.
+#   Ipotesi A (attribute-specific): l'adjective "smiling" e' troppo
+#     semanticamente diffuso -> age, piu' concreto e localizzato su
+#     tratti facciali stabili (rughe, capelli), potrebbe binding-arsi
+#     meglio ai token di genere.
+#   Ipotesi B (structural): Flux non fa binding per NESSUN adjective
+#     -> age leakka uguale -> problema architetturale.
+#
+# STRUTTURA identica a v3 smile:
+#   - 5 enhance-man entries: direzione age+ (positive=very old,
+#     unconditional=very young)
+#   - 5 preservation-woman entries: YAML trick con target == positive
+#     == unconditional == neutral = "a woman (context)" -> la loss Eq.7
+#     collassa a MSE(LoRA_on, LoRA_off) = puro segnale preservation.
+#
+# IPERPARAMETRI identici a v3/v4 per confronto apples-to-apples:
+#   - guidance_scale: 2 (NON 4 del paper originale: matchiamo v3 smile
+#     per comparabilita' diretta del leakage)
+#   - resolution: 512
+#
+# CONVENZIONE prompt: "a man" / "a woman" (NON "male person" / "female
+# person" del template del paper): matchiamo nomenclatura di v3/v4 smile
+# per avere a parita' di tutto tranne l'attributo.
+# ============================================================
+
+# === 5 enhance-man entries: direzione age up ===
+
+- target: "a man"
+  positive: "a very old man, elderly, wrinkles, gray hair"
+  unconditional: "a very young man, youthful, smooth skin"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a photo of a man"
+  positive: "a photo of a very old man, elderly, wrinkles"
+  unconditional: "a photo of a very young man, youthful"
+  neutral: "a photo of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a portrait of a man"
+  positive: "a portrait of a very old man, elderly, wrinkles, aged"
+  unconditional: "a portrait of a very young man, youthful"
+  neutral: "a portrait of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a man standing"
+  positive: "an old man standing, elderly, aged"
+  unconditional: "a young man standing, youthful"
+  neutral: "a man standing"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "an image of a man"
+  positive: "an image of a very old man, elderly, aged"
+  unconditional: "an image of a very young man, youthful"
+  neutral: "an image of a man"
+  guidance_scale: 2
+  resolution: 512
+
+# === 5 preservation-woman entries: YAML trick ===
+# target == positive == unconditional == neutral -> Eq.7 degenera a
+# preservation pura: la LoRA deve produrre stessa velocity del baseline
+# Flux su qualsiasi prompt "a woman (context)", ovvero NON toccare
+# la donna. Zero segnale di direzione, solo regolarizzazione.
+
+- target: "a woman"
+  positive: "a woman"
+  unconditional: "a woman"
+  neutral: "a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a photo of a woman"
+  positive: "a photo of a woman"
+  unconditional: "a photo of a woman"
+  neutral: "a photo of a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a portrait of a woman"
+  positive: "a portrait of a woman"
+  unconditional: "a portrait of a woman"
+  neutral: "a portrait of a woman"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a woman standing"
+  positive: "a woman standing"
+  unconditional: "a woman standing"
+  neutral: "a woman standing"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "an image of a woman"
+  positive: "an image of a woman"
+  unconditional: "an image of a woman"
+  neutral: "an image of a woman"
+  guidance_scale: 2
+  resolution: 512

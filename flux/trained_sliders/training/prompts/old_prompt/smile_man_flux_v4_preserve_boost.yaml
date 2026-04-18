@@ -1,0 +1,196 @@
+# smile_man_flux_v4_preserve_boost.yaml
+#
+# Evoluzione di v3_yaml_trick dopo diagnosi del leakage osservato in
+# validazione: lo slider trainato con 5+5 entries ha appreso una direzione
+# "smile amplifier" globale che amplifica il sorriso anche sulla donna
+# isolata (cambio da sorriso normale a bocca aperta), nonostante la
+# woman-loss fosse a ~1e-3. Root cause: la preservazione via Eq.7
+# degenerata vincola la LoRA solo sui pochi (z_t, prompt) specifici che
+# il training vede. Per i prompt T5-simili ma non identici (contesto
+# diverso, attributi diversi, espressione già positiva) la preservazione
+# non si trasferisce.
+#
+# Strategia v4: tenere TUTTO uguale a v3 tranne le woman entries,
+# espanse da 5 a 15 per coprire 5 dimensioni di variazione nello spazio
+# T5:
+#   1. phrasing/framing (a woman, photo of, portrait, headshot)
+#   2. età (young, middle-aged, elderly)
+#   3. etnia (Asian, Black)
+#   4. attributi fisici (long hair, glasses)
+#   5. espressione preservata (smiling, serious, laughing) <- chiave
+#      anti-amplificazione: con "a smiling woman" come preservation,
+#      la LoRA NON può imparare a spingere un sorriso già presente
+#      verso bocca aperta senza essere punita. Stesso per "laughing".
+#
+# Ratio enhance:preservation scende da 50:50 (v3) a 25:75 (v4), cioè
+# per ogni step sul man-branch ci sono ~3 step di preservazione media
+# su prompt woman diversi. La direzione smile dovrebbe restare appresa
+# (è comunque 5 entries × 25 step ciascuna su 500) ma con molta meno
+# libertà di generalizzarsi a volti femminili.
+#
+# Iperparametri resto identici a v3:
+#   - 500 max_train_steps (confronto pulito con v3)
+#   - rank 16, xattn, alpha 1
+#   - lr 0.002, warmup 200
+#   - eta=2 per man, eta=1 per woman (irrilevante per YAML trick)
+#   - save_every 100
+#
+# ============================================================
+# MAN entries (5) — INVARIATE da v3. Gradient spinge smile direction.
+# ============================================================
+
+- target: "a man"
+  positive: "a man, smiling, happy face, big smile"
+  unconditional: "a man, frowning, grumpy, sad"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a man"
+  positive: "a man, grinning, joyful expression, toothy smile"
+  unconditional: "a man, scowling, unhappy expression, mouth closed"
+  neutral: "a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "portrait of a man"
+  positive: "portrait of a man, smiling, happy face, big smile"
+  unconditional: "portrait of a man, frowning, grumpy, sad"
+  neutral: "portrait of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "photo of a man"
+  positive: "photo of a man, smiling, happy face, big smile"
+  unconditional: "photo of a man, frowning, grumpy, sad"
+  neutral: "photo of a man"
+  guidance_scale: 2
+  resolution: 512
+
+- target: "a young man"
+  positive: "a young man, smiling, happy face, big smile"
+  unconditional: "a young man, frowning, grumpy, sad"
+  neutral: "a young man"
+  guidance_scale: 2
+  resolution: 512
+
+# ============================================================
+# WOMAN entries (15) — Eq.7 degenerata -> preservation pura su
+# ampio spettro di attivazioni T5. 5 dimensioni × ~3 varianti.
+# target == positive == unconditional == neutral per ogni entry.
+# ============================================================
+
+# --- (A) Phrasing/framing base (3) ---------------------------
+- target: "a woman"
+  positive: "a woman"
+  unconditional: "a woman"
+  neutral: "a woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "photo of a woman"
+  positive: "photo of a woman"
+  unconditional: "photo of a woman"
+  neutral: "photo of a woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "portrait of a woman"
+  positive: "portrait of a woman"
+  unconditional: "portrait of a woman"
+  neutral: "portrait of a woman"
+  guidance_scale: 1
+  resolution: 512
+
+# --- (B) Età (3) --------------------------------------------
+- target: "a young woman"
+  positive: "a young woman"
+  unconditional: "a young woman"
+  neutral: "a young woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a middle-aged woman"
+  positive: "a middle-aged woman"
+  unconditional: "a middle-aged woman"
+  neutral: "a middle-aged woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "an elderly woman"
+  positive: "an elderly woman"
+  unconditional: "an elderly woman"
+  neutral: "an elderly woman"
+  guidance_scale: 1
+  resolution: 512
+
+# --- (C) Etnia (2) ------------------------------------------
+- target: "an Asian woman"
+  positive: "an Asian woman"
+  unconditional: "an Asian woman"
+  neutral: "an Asian woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a Black woman"
+  positive: "a Black woman"
+  unconditional: "a Black woman"
+  neutral: "a Black woman"
+  guidance_scale: 1
+  resolution: 512
+
+# --- (D) Attributi fisici (3) -------------------------------
+- target: "a woman with long hair"
+  positive: "a woman with long hair"
+  unconditional: "a woman with long hair"
+  neutral: "a woman with long hair"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a woman with short hair"
+  positive: "a woman with short hair"
+  unconditional: "a woman with short hair"
+  neutral: "a woman with short hair"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a woman wearing glasses"
+  positive: "a woman wearing glasses"
+  unconditional: "a woman wearing glasses"
+  neutral: "a woman wearing glasses"
+  guidance_scale: 1
+  resolution: 512
+
+# --- (E) Espressione preservata (4) — ANTI-AMPLIFICAZIONE ---
+# Queste sono le entries chiave della strategia v4: preservano
+# esplicitamente volti femminili con espressioni già positive o
+# intense, impedendo alla LoRA di spingerli oltre verso bocca
+# aperta / risata. Il bug osservato in v3 (smile normale ->
+# bocca aperta) dovrebbe essere attaccato da queste.
+- target: "a smiling woman"
+  positive: "a smiling woman"
+  unconditional: "a smiling woman"
+  neutral: "a smiling woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a laughing woman"
+  positive: "a laughing woman"
+  unconditional: "a laughing woman"
+  neutral: "a laughing woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a serious woman"
+  positive: "a serious woman"
+  unconditional: "a serious woman"
+  neutral: "a serious woman"
+  guidance_scale: 1
+  resolution: 512
+
+- target: "a woman with a neutral expression"
+  positive: "a woman with a neutral expression"
+  unconditional: "a woman with a neutral expression"
+  neutral: "a woman with a neutral expression"
+  guidance_scale: 1
+  resolution: 512
