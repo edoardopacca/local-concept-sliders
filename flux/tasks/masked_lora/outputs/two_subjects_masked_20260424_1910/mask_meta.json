@@ -1,0 +1,18 @@
+{
+  "phase": "sam_segmentation_real",
+  "image_name": "base.png",
+  "mask_image": "mask_target.png",
+  "sam_checkpoint": "mask_SAM/checkpoints/sam_vit_h_4b8939.pth",
+  "sam_model_type": "vit_h",
+  "prompt": {
+    "mode": "interactive",
+    "point": [
+      345,
+      162
+    ]
+  },
+  "mask_resolution": [
+    512,
+    512
+  ]
+}

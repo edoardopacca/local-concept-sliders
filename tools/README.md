@@ -11,7 +11,7 @@ Script e config personali per il workflow HPC ↔ Mac.
 | `pull_config.sh.example` | Template config Mac (HPC user/host/path) | template tracked |
 | `pull_config.sh` | Config personale Mac, source da `pull_from_hpc.sh` e `push_to_hpc.sh` | **gitignored** |
 | **`pull_from_hpc.sh`** | HPC → Mac: scarica sliders + outputs (incrementale) | tracked |
-| **`push_to_hpc.sh`** | Mac → HPC: pusha tutti gli `.slurm` (incrementale) | tracked |
+| **`push_to_hpc.sh`** | Mac → HPC: pusha `.slurm` + configs YAML + prompts YAML (incrementale) | tracked |
 
 ## First-time setup
 
@@ -62,13 +62,22 @@ ssh hpc                                        # test: deve entrare senza passwo
 
 ### Mac → HPC: `push_to_hpc.sh`
 
-Pusha tutti gli `.slurm` dal Mac a HPC. **Incrementale**: trasferisce solo file nuovi/modificati. Mantiene la stessa struttura della repo.
+Pusha dal Mac a HPC i file di configurazione del progetto:
+- **`.slurm`** in `**/jobs/{old,new,test}_slurm/`
+- **`configs/*.yaml`** in `<arch>/trained_sliders/training/configs/`
+- **`prompts/*/*.yaml`** in `<arch>/trained_sliders/training/prompts/{old,new,test}_prompt/`
+
+**Incrementale**: trasferisce solo file nuovi/modificati. Mantiene la struttura della repo.
 
 ```bash
-./tools/push_to_hpc.sh           # tutti gli .slurm (old + new + test)
+./tools/push_to_hpc.sh           # default: TUTTO (slurm + configs + prompts)
+./tools/push_to_hpc.sh slurm     # solo .slurm
 ./tools/push_to_hpc.sh new       # solo new_slurm/
 ./tools/push_to_hpc.sh test      # solo test_slurm/
 ./tools/push_to_hpc.sh old       # solo old_slurm/
+./tools/push_to_hpc.sh configs   # solo configs/*.yaml
+./tools/push_to_hpc.sh prompts   # solo prompts/*/*.yaml
+./tools/push_to_hpc.sh yaml      # configs + prompts (no slurm)
 ```
 
 ### HPC → Mac: `pull_from_hpc.sh`

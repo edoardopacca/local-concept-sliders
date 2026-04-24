@@ -1,0 +1,87 @@
+# age_flux_v1_symmetric.yaml
+#
+# Age slider su Flux nel setting SIMMETRICO (stile v5_symmetric smile):
+#   - 10 entries: 5 male x etnie + 5 female x etnie
+#   - TUTTE enhance (nessun YAML trick di preservation)
+#   - Simmetrico per genere (l'effetto età si applica a chiunque)
+#
+# Direzione: scale positivo → vecchio (rughe, capelli grigi),
+#            scale negativo → giovane (pelle liscia, capelli pieni).
+#
+# Hyperparameters identici a smile_flux_v5_symmetric per confronto
+# apples-to-apples (guidance 4, resolution 512).
+# ============================================================
+
+# === 5 enhance MALE entries ===
+
+- target: "male white person"
+  positive: "male white person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "male white person, young, smooth skin, no wrinkles, youthful"
+  neutral: "male white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male black person"
+  positive: "male black person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "male black person, young, smooth skin, no wrinkles, youthful"
+  neutral: "male black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male indian person"
+  positive: "male indian person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "male indian person, young, smooth skin, no wrinkles, youthful"
+  neutral: "male indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male asian person"
+  positive: "male asian person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "male asian person, young, smooth skin, no wrinkles, youthful"
+  neutral: "male asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "male latino person"
+  positive: "male latino person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "male latino person, young, smooth skin, no wrinkles, youthful"
+  neutral: "male latino person"
+  guidance_scale: 4
+  resolution: 512
+
+# === 5 enhance FEMALE entries ===
+
+- target: "female white person"
+  positive: "female white person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "female white person, young, smooth skin, no wrinkles, youthful"
+  neutral: "female white person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female black person"
+  positive: "female black person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "female black person, young, smooth skin, no wrinkles, youthful"
+  neutral: "female black person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female indian person"
+  positive: "female indian person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "female indian person, young, smooth skin, no wrinkles, youthful"
+  neutral: "female indian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female asian person"
+  positive: "female asian person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "female asian person, young, smooth skin, no wrinkles, youthful"
+  neutral: "female asian person"
+  guidance_scale: 4
+  resolution: 512
+
+- target: "female latino person"
+  positive: "female latino person, old, wrinkled skin, gray hair, elderly"
+  unconditional: "female latino person, young, smooth skin, no wrinkles, youthful"
+  neutral: "female latino person"
+  guidance_scale: 4
+  resolution: 512

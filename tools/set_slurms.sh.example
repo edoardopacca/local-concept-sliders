@@ -23,6 +23,10 @@
 #   /scratch/9999999/local-concept-sliders                   ← se usi /scratch
 export FERT_REPO=/home/<your-username>/FERT_PROJECT/local-concept-sliders
 
+# Aggiungi la repo root al PYTHONPATH così Python trova i package `sdxl` e `flux`
+# (necessario per gli script che fanno import assoluti tipo `from sdxl.core.lora import ...`)
+export PYTHONPATH="$FERT_REPO:${PYTHONPATH:-}"
+
 # -----------------------------------------------------------------------------
 # Cache HuggingFace
 # -----------------------------------------------------------------------------
