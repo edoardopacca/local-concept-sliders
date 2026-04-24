@@ -1,0 +1,47 @@
+#!/bin/bash
+# =============================================================================
+# pull_config.sh — Configurazione personale per gli script HPC↔Mac
+# =============================================================================
+# QUESTO È UN TEMPLATE. Copia in `tools/pull_config.sh` (gitignored) e
+# modifica secondo il tuo setup personale:
+#
+#   cp tools/pull_config.sh.example tools/pull_config.sh
+#   nano tools/pull_config.sh
+#
+# Usato da: pull_from_hpc.sh, push_to_hpc.sh
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Username SSH su HPC
+# -----------------------------------------------------------------------------
+# Il numero matricola o nome utente con cui ti logghi su HPC.
+HPC_USER="<your-username>"
+
+# -----------------------------------------------------------------------------
+# Hostname o alias SSH dell'HPC
+# -----------------------------------------------------------------------------
+# OPZIONE A — Alias SSH (consigliato, più pulito).
+#   Aggiungi in ~/.ssh/config sul Mac:
+#     Host hpc
+#         HostName slogin.hpc.unibocconi.it
+#         User <tuo-username>
+#   Poi qui basta:
+HPC_HOST="hpc"
+
+# OPZIONE B — Hostname completo diretto (no alias SSH).
+#   HPC_HOST="slogin.hpc.unibocconi.it"
+
+# -----------------------------------------------------------------------------
+# Path della repo SU HPC (PATH COMPLETO, non `~`)
+# -----------------------------------------------------------------------------
+# Esempi:
+#   /home/3226571/FERT_PROJECT/local-concept-sliders        ← Federico
+#   /home/9999999/lavoro/local-concept-sliders               ← compagno A
+#   /scratch/9999999/local-concept-sliders                   ← se usi /scratch
+HPC_REPO="/home/<your-username>/FERT_PROJECT/local-concept-sliders"
+
+# -----------------------------------------------------------------------------
+# Path della repo SUL MAC
+# -----------------------------------------------------------------------------
+# Default: ~/Desktop/local-concept-sliders. Cambia se l'hai messa altrove.
+LOCAL_REPO="$HOME/Desktop/local-concept-sliders"

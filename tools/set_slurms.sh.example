@@ -1,0 +1,96 @@
+#!/bin/bash
+# =============================================================================
+# set_slurms.sh — Configurazione personale HPC per i job SLURM
+# =============================================================================
+# QUESTO È UN TEMPLATE. Copia in `tools/set_slurms.sh` (gitignored) e
+# modifica secondo il tuo setup HPC personale.
+#
+#   cp tools/set_slurms.sh.example tools/set_slurms.sh
+#   nano tools/set_slurms.sh
+#
+# Tutti gli SLURM fanno `source $SLURM_SUBMIT_DIR/tools/set_slurms.sh` all'inizio,
+# quindi gli stessi job funzionano per chiunque (ognuno con il suo setup:
+# venv, conda, mamba, path diversi, ecc.).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Path della repo su HPC (USA PATH COMPLETO, non `~`, per evitare ambiguità
+# in contesti dove la tilde non viene espansa)
+# -----------------------------------------------------------------------------
+# Esempi reali:
+#   /home/3226571/FERT_PROJECT/local-concept-sliders        ← Federico
+#   /home/9999999/lavoro/local-concept-sliders               ← compagno A
+#   /scratch/9999999/local-concept-sliders                   ← se usi /scratch
+export FERT_REPO=/home/<your-username>/FERT_PROJECT/local-concept-sliders
+
+# -----------------------------------------------------------------------------
+# Cache HuggingFace
+# -----------------------------------------------------------------------------
+# Dove finiscono i modelli base (Flux.1-dev ~25 GB, SDXL ~7 GB) e altri pretrained.
+# Idealmente in una cartella scrivibile e capiente. Esempi:
+#   /home/3226571/FERT_PROJECT/Caches_and_venvs/hf_cache    ← Federico
+#   /home/9999999/.cache/huggingface                          ← default HF (occhio alla quota home)
+#   /scratch/9999999/hf_cache                                  ← se usi /scratch
+export FERT_HF_CACHE=/home/<your-username>/FERT_PROJECT/Caches_and_venvs/hf_cache
+
+# -----------------------------------------------------------------------------
+# Funzioni di attivazione environment Python
+# -----------------------------------------------------------------------------
+# Definisci in base al tuo gestore (venv, conda, mamba, ecc.). Gli SLURM
+# chiamano `activate_flux_env` o `activate_sdxl_env` senza sapere quale
+# gestore stai usando.
+# Decommenta UNA delle versioni qui sotto e commenta le altre.
+
+# ─── ESEMPIO 1: VENV ──────────────────────────────────────────────────────────
+activate_flux_env() {
+    source /home/<your-username>/FERT_PROJECT/Caches_and_venvs/flux_env/bin/activate
+}
+
+activate_sdxl_env() {
+    source /home/<your-username>/Linux4HPC/venvs/sliders/bin/activate
+}
+
+# ─── ESEMPIO 2: CONDA ─────────────────────────────────────────────────────────
+# (decommenta queste e commenta sopra)
+#
+# activate_flux_env() {
+#     source /home/<your-username>/miniconda3/etc/profile.d/conda.sh
+#     conda activate flux_env
+# }
+#
+# activate_sdxl_env() {
+#     source /home/<your-username>/miniconda3/etc/profile.d/conda.sh
+#     conda activate sdxl_env
+# }
+
+# ─── ESEMPIO 3: MAMBA (più veloce di conda) ───────────────────────────────────
+# activate_flux_env() {
+#     source /home/<your-username>/mambaforge/etc/profile.d/mamba.sh
+#     mamba activate flux_env
+# }
+#
+# activate_sdxl_env() {
+#     source /home/<your-username>/mambaforge/etc/profile.d/mamba.sh
+#     mamba activate sdxl_env
+# }
+
+# ─── ESEMPIO 4: MISTO (Flux su conda, SDXL su venv) ───────────────────────────
+# activate_flux_env() {
+#     source /home/<your-username>/miniconda3/etc/profile.d/conda.sh
+#     conda activate flux_env
+# }
+#
+# activate_sdxl_env() {
+#     source /home/<your-username>/Linux4HPC/venvs/sliders/bin/activate
+# }
+
+# ─── ESEMPIO 5: MODULE LOAD (cluster che usano Lmod) ──────────────────────────
+# activate_flux_env() {
+#     module load python/3.10
+#     source /home/<your-username>/envs/flux_env/bin/activate
+# }
+#
+# activate_sdxl_env() {
+#     module load python/3.10
+#     source /home/<your-username>/envs/sdxl_env/bin/activate
+# }
