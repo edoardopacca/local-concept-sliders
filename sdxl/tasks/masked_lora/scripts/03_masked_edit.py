@@ -170,7 +170,16 @@ def main() -> None:
         negative_prompt_2=None,
     )
     add_text_embeds = pooled_prompt_embeds
-    add_time_ids = pipe._get_add_time_ids((height, width), (0, 0), (height, width), dtype=prompt_embeds.dtype)
+    text_encoder_projection_dim = (
+        int(pooled_prompt_embeds.shape[-1])
+        if getattr(pipe, "text_encoder_2", None) is None
+        else pipe.text_encoder_2.config.projection_dim
+    )
+    add_time_ids = pipe._get_add_time_ids(
+        (height, width), (0, 0), (height, width),
+        dtype=prompt_embeds.dtype,
+        text_encoder_projection_dim=text_encoder_projection_dim,
+    )
     if do_cfg:
         prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
         add_text_embeds = torch.cat([negative_pooled_prompt_embeds, add_text_embeds], dim=0)
