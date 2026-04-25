@@ -197,8 +197,22 @@ def main():
         type=str,
         nargs="+",
         required=True,
-        help="Target prompt per ogni slider (stessa posizione di --slider_paths). "
-             "Ogni target_prompt va presente letteralmente in --prompt.",
+        help="Target prompt per ogni regione (sottostringa esatta di --prompt). "
+             "Default (1:1): un target per slider, posizionalmente. "
+             "Con --slider_to_target: un target per REGIONE mascherata, "
+             "puo' essere meno dei target_prompt rispetto agli slider.",
+    )
+    parser.add_argument(
+        "--slider_to_target",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Mappa slider->target. `--slider_to_target 0 0 1` significa: "
+             "slider 0 e 1 vanno entrambi sul target_prompt 0 (composizione "
+             "paper-style: somma additiva delle delta nella stessa regione), "
+             "slider 2 va sul target_prompt 1. "
+             "Lunghezza == numero di --slider_paths. "
+             "Se omesso, default identita' (1 slider per target, retro-compat).",
     )
 
     # Generation
@@ -226,11 +240,32 @@ def main():
 
     # -------- Validate --------
     num_sliders = len(args.slider_paths)
-    if len(args.target_prompt) != num_sliders:
-        raise ValueError(
-            f"Numero di --target_prompt ({len(args.target_prompt)}) deve "
-            f"matchare numero di --slider_paths ({num_sliders})."
-        )
+    num_targets = len(args.target_prompt)
+
+    if args.slider_to_target is None:
+        # Retro-compat: 1 slider per target.
+        if num_targets != num_sliders:
+            raise ValueError(
+                f"Senza --slider_to_target, --target_prompt ({num_targets}) deve "
+                f"matchare --slider_paths ({num_sliders}). Per piu' slider sullo "
+                f"stesso target usa --slider_to_target."
+            )
+        slider_to_target = list(range(num_sliders))
+    else:
+        if len(args.slider_to_target) != num_sliders:
+            raise ValueError(
+                f"--slider_to_target ha {len(args.slider_to_target)} elementi ma "
+                f"--slider_paths ne ha {num_sliders}. Serve un target_idx per ogni "
+                f"slider."
+            )
+        slider_to_target = list(args.slider_to_target)
+        for s_idx, t_idx in enumerate(slider_to_target):
+            if not (0 <= t_idx < num_targets):
+                raise ValueError(
+                    f"--slider_to_target[{s_idx}]={t_idx} fuori range "
+                    f"[0, {num_targets}). Hai {num_targets} target_prompt."
+                )
+
     if args.lora_scales is None:
         lora_scales = [1.0] * num_sliders
     else:
@@ -265,11 +300,17 @@ def main():
     lora_dicts = ensure_matching_lora_params(lora_dicts, rank=args.lora_fill_rank)
 
     for i, lora_dict in enumerate(lora_dicts):
+        t_idx = slider_to_target[i]
         print(
-            f"  [slider {i}] target='{args.target_prompt[i]}' "
+            f"  [slider {i}] target[{t_idx}]='{args.target_prompt[t_idx]}' "
             f"scale={lora_scales[i]} path={args.slider_paths[i]}"
         )
-        pipe.load_lora_weights(lora_dict)
+        # adapter_name esplicito: garantisce nomi distinti default_0..N-1
+        # (allinea con _set_adapter_with_scale in flux_blocks.py) e supporta
+        # il caricamento dello STESSO file slider piu' volte come adapter
+        # distinti (utile quando un concept va applicato a target multipli
+        # con scale diverse — es. smile +1 sul man e -1 sulla woman).
+        pipe.load_lora_weights(lora_dict, adapter_name=f"default_{i}")
 
     # -------- Patch Flux transformer blocks --------
     print("[shop_concept] registering transformer blocks (mask-aware)")
@@ -283,9 +324,13 @@ def main():
 
     # -------- Generate --------
     print(f"[shop_concept] generating: prompt='{args.prompt}'")
-    print(f"                          targets={args.target_prompt}")
-    print(f"                          scales ={lora_scales}")
-    result = pipe(
+    print(f"                          targets         ={args.target_prompt}")
+    print(f"                          scales (slider) ={lora_scales}")
+    print(f"                          slider->target  ={slider_to_target}")
+    # In modalita' multi-LoRA per target, la pipeline costruisce il mapping
+    # target_to_sliders e attiva piu' adapter PEFT contemporaneamente sulla
+    # stessa regione mascherata (somma additiva delle delta).
+    pipe_kwargs = dict(
         prompt=args.prompt,
         target_prompt=args.target_prompt,
         guidance_scale=args.guidance_scale,
@@ -295,8 +340,11 @@ def main():
         width=args.width,
         generator=generator,
         edit_start_step=args.edit_start_step,
-        target_lora_scales=lora_scales,  # shop_concept: new kwarg
+        target_lora_scales=lora_scales,
     )
+    if args.slider_to_target is not None:
+        pipe_kwargs["slider_to_target"] = slider_to_target
+    result = pipe(**pipe_kwargs)
 
     # -------- Save --------
     out_path = Path(args.output_path)

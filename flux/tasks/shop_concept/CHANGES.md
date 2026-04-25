@@ -59,6 +59,17 @@ Entrypoint CLI specifico per i Concept Sliders. Sostituisce
     locali). Tolto per semplicita'; l'originale lo supportava.
   * Tolto il supporto `--cuda_device`; uso la stessa convenzione
     `CUDA_VISIBLE_DEVICES` via slurm.
+  * Nuovo parametro `--slider_to_target` (lista di interi, `len ==
+    num_sliders`): mappa ogni slider al `target_prompt` su cui deve
+    essere applicato. `--slider_to_target 0 0 1` significa: slider 0 e
+    1 si compongono additivamente sul target 0, slider 2 va sul target 1.
+    Permette di applicare PIU' slider sulla STESSA regione (composizione
+    Concept Sliders Metodo 2 / ExitStack via PEFT multi-adapter — vedi
+    `flux_blocks.py`). Se omesso, default identita' (1 slider per
+    target) — comportamento retro-compatibile.
+  * `--lora_scales` ora e' indicizzato per slider (uno per
+    `--slider_paths`), non per target. Nel caso default identita' la
+    differenza non si vede.
 
 ### `jobs/generate_shop_concept.slurm`
 Template slurm per HPC Bocconi. Non ha corrispondente in LoRAShop-main
@@ -136,7 +147,36 @@ Derivato da `LoRAShop-main/flux_blocks.py` con le seguenti modifiche:
      Se la key non e' in kwargs (uso alla LoRAShop "vanilla"), torna
      `None` e il comportamento e' identico all'originale.
 
-  4. **Compat signatures per diffusers >= 0.36**
+  4. **Multi-adapter per target (composizione paper-style)**.
+     `_set_adapter_with_scale` accetta un secondo argomento opzionale
+     `target_to_sliders` (lista di liste, mappa target_idx -> [slider_idx, ...]):
+     ```python
+     def _set_adapter_with_scale(module_to_set, target_idx,
+                                 target_lora_scales=None,
+                                 target_to_sliders=None)
+     ```
+     Se `target_to_sliders is None` (default): comportamento attuale,
+     attiva solo `default_{target_idx}` con scale `target_lora_scales[target_idx]`
+     (1 slider per target, retro-compat).
+     Se `target_to_sliders` e' fornito: per ogni `target_idx` attiva
+     SIMULTANEAMENTE tutti gli adapter `default_{slider_idx}` per
+     `slider_idx in target_to_sliders[target_idx]`, ognuno con la sua scale
+     `target_lora_scales[slider_idx]`. PEFT supporta nativamente
+     `BaseTunerLayer.set_adapter([...])` con lista: tutti gli adapter
+     restano in `active_adapters` e il forward del LoRA somma le delta:
+     `out = W·x + Σ scale_i · B_i A_i · x`. E' il PEFT-equivalente
+     dell'approccio `ExitStack(LoRANetwork)` proposto dal paper Concept
+     Sliders (issue#45 Metodo 2), applicato pero' dentro la regione
+     mascherata invece che globalmente — cosi' la composizionalita'
+     paper-style si fonde col mask-aware di LoRAShop.
+     `target_lora_scales` cambia semantica: ora e' indicizzato per
+     SLIDER (non per target). Senza `target_to_sliders`, la differenza
+     non si vede (1:1 -> stesso indice).
+     Le 10 chiamate `self.set_adapter(modulo, target_idx, ...)` nei due
+     `forward_blend_block` propagano `target_to_sliders` letto da
+     `joint_attention_kwargs.get("target_to_sliders")`.
+
+  5. **Compat signatures per diffusers >= 0.36**
      (hotfix aggiunto dopo test su HPC Bocconi).
        * `TransformerBlock.forward(..., **kwargs)`: aggiunto `**kwargs`
          finale per assorbire eventuali kwargs addizionali che diffusers
@@ -171,12 +211,27 @@ modifiche:
 
   2. **Nuovo kwarg `target_lora_scales` in `RealGenerationPipeline.__call__`**.
      Ricevuta una lista di float (una scale per concept slider), viene
-     validata contro il numero di `target_prompt` e scritta in
+     validata contro il numero di slider caricati e scritta in
      `joint_attention_kwargs["target_lora_scales"]`. Da li' i
      `TransformerBlock` / `SingleTransformerBlock` la leggono nel loop
      per-target. Se il kwarg e' `None` (default) la chiave non viene
      scritta e il comportamento e' identico a LoRAShop originale
      (scaling=1.0 per tutti gli slider).
+
+  3. **Nuovo kwarg `slider_to_target` in `RealGenerationPipeline.__call__`**.
+     Lista di interi `len == num_sliders`, dove `slider_to_target[i] = j`
+     significa "slider i si applica sulla regione mascherata dal
+     target_prompt[j]". La pipeline costruisce internamente l'inverso
+     `target_to_sliders` (lista di liste) e lo scrive in
+     `joint_attention_kwargs["target_to_sliders"]`, da cui i
+     `TransformerBlock` / `SingleTransformerBlock` lo leggono per attivare
+     simultaneamente piu' adapter PEFT per ciascuna regione (vedi
+     `flux_blocks.py` punto 4). Se `None` (default), la pipeline imposta
+     l'identita' (1 slider per target) e il comportamento e' invariato
+     rispetto a LoRAShop. Validazione: ogni `t_idx` deve essere
+     `0 <= t_idx < num_targets`, e ogni target deve avere almeno uno
+     slider mappato (altrimenti la regione mascherata avrebbe somma
+     vuota e blending degenere).
 
 Nulla altro e' stato modificato: tutta la logica di encode_prompt,
 prepare_latents, register_transformer_blocks, get_substring_tokens,

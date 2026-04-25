@@ -18,6 +18,17 @@
 #      "slider applicato a piena forza di training"; eventuali valori di
 #      slider diversi da 1.0 vengono applicati via set_adapter nel loop
 #      per-target.
+#   4. Multi-adapter per target (composizione paper-style). _set_adapter_with_scale
+#      accetta target_to_sliders=None|List[List[int]] (mappa target_idx ->
+#      [slider_idx, ...]). Se passato, attiva contemporaneamente tutti gli
+#      adapter PEFT default_{slider_idx} sullo stesso layer: PEFT somma
+#      additivamente le delta -> out = W*x + sum_i scale_i * B_i A_i * x.
+#      Equivalente al Metodo 2 di Concept Sliders (ExitStack su LoRANetwork)
+#      ma applicato dentro la regione mascherata (mask-aware), non global.
+#      Se target_to_sliders=None, comportamento identico a prima
+#      (1 slider per target). target_lora_scales e' indicizzato per
+#      slider_idx in entrambi i casi (con identity-mapping coincide con
+#      target_idx come prima).
 # ---------------------------------------------------------------------------
 
 import torch
@@ -63,24 +74,53 @@ def apply_rotary_emb(x, freqs_cis, use_real=True, use_real_unbounded_dim=-1):
 # ---------------------------------------------------------------------------
 def _set_adapter_with_scale(module_to_set: nn.Module,
                             target_idx: int,
-                            target_lora_scales=None):
-    """Seleziona l'adapter PEFT `default_{target_idx}` su tutti i tuner layers
-    del modulo. Se `target_lora_scales` e' una sequenza, imposta anche la
-    scaling del layer a `target_lora_scales[target_idx]` (es. 0.5 / 1.5 per
-    il concept slider continuo). Altrimenti la scaling non viene toccata
-    (PEFT default, che nel nostro caso -> 1.0 grazie a fold_alpha).
+                            target_lora_scales=None,
+                            target_to_sliders=None):
+    """Attiva uno o piu' adapter PEFT per il dato `target_idx` su tutti i
+    tuner layers del modulo, e imposta la loro scaling.
+
+    Mapping:
+      * Se `target_to_sliders is None` (default, retro-compatibile):
+          1 slider per target -> attiva solo `default_{target_idx}` con scale
+          `target_lora_scales[target_idx]`.
+      * Se `target_to_sliders` e' una sequenza di liste (mappa
+        target_idx -> [slider_idx, ...]):
+          attiva tutti gli adapter `default_{slider_idx}` con scale
+          `target_lora_scales[slider_idx]`. PEFT somma additivamente le
+          delta dei vari adapter attivi (equivalente al Metodo 2 di
+          Concept Sliders / ExitStack), applicate dentro la regione
+          mascherata dal target.
+
+    Nota: con multi-adapter il forward LoRA per quella regione produce
+    `out = W·x + sum_i scale_i · B_i A_i · x`. Le maschere e i loop
+    per-target rimangono invariati: cambia solo cosa c'e' "dentro" un
+    target.
     """
-    adapter_name = f"default_{target_idx}"
-    if target_lora_scales is not None and 0 <= target_idx < len(target_lora_scales):
-        scale_val = float(target_lora_scales[target_idx])
+    if target_to_sliders is not None:
+        slider_idxs = list(target_to_sliders[target_idx])
     else:
-        scale_val = None
+        slider_idxs = [target_idx]
+
+    adapter_names = [f"default_{i}" for i in slider_idxs]
+
+    if target_lora_scales is not None:
+        scales = [
+            float(target_lora_scales[i])
+            if 0 <= i < len(target_lora_scales) else None
+            for i in slider_idxs
+        ]
+    else:
+        scales = [None] * len(slider_idxs)
 
     for m in module_to_set.modules():
         if isinstance(m, BaseTunerLayer):
-            m.set_adapter(adapter_name)
-            if scale_val is not None:
-                m.scaling[adapter_name] = scale_val
+            # PEFT BaseTunerLayer.set_adapter accetta str o List[str].
+            # Con una lista, tutti gli adapter restano in active_adapters
+            # e il forward somma le loro delta (composizione paper-style).
+            m.set_adapter(adapter_names)
+            for name, scale_val in zip(adapter_names, scales):
+                if scale_val is not None:
+                    m.scaling[name] = scale_val
 
 
 class TransformerBlock(nn.Module):
@@ -135,10 +175,14 @@ class TransformerBlock(nn.Module):
         self.enable_lora(self.ff)
         self.enable_lora(self.ff_context)
 
-    # MODIFICATO (shop_concept): accetta target_lora_scales opzionale.
+    # MODIFICATO (shop_concept): accetta target_lora_scales e target_to_sliders.
+    # Con target_to_sliders settato, attiva piu' adapter PEFT
+    # contemporaneamente per lo stesso target_idx (composizione paper-style:
+    # somma additiva delle delta dei vari slider sulla stessa regione).
     def set_adapter(self, module_to_set: nn.Module, adapter_idx: int,
-                    target_lora_scales=None):
-        _set_adapter_with_scale(module_to_set, adapter_idx, target_lora_scales)
+                    target_lora_scales=None, target_to_sliders=None):
+        _set_adapter_with_scale(module_to_set, adapter_idx,
+                                target_lora_scales, target_to_sliders)
 
     def calc_attention_mask(self, img_features, text_features, target_token_indices, joint_attention_kwargs):
         k_text = self.attn.add_k_proj(text_features)
@@ -266,6 +310,7 @@ class TransformerBlock(nn.Module):
 
         joint_attention_kwargs = joint_attention_kwargs if joint_attention_kwargs is not None else {}
         target_lora_scales = joint_attention_kwargs.get("target_lora_scales")  # shop_concept
+        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")    # shop_concept multi-LoRA
 
         # Constructing the attn_output
 
@@ -276,13 +321,13 @@ class TransformerBlock(nn.Module):
         lora_gate_mlps = []
         for target_idx in range(len(interest_token_idxs)):
             # Normalization Pass
-            self.set_adapter(self.norm1, target_idx, target_lora_scales)
+            self.set_adapter(self.norm1, target_idx, target_lora_scales, target_to_sliders)
             lora_norm_hidden_states, lora_gate_msa, lora_shift_mlp, lora_scale_mlp, lora_gate_mlp = self.norm1(hidden_states, emb=temb)
-            self.set_adapter(self.norm1_context, target_idx, target_lora_scales)
+            self.set_adapter(self.norm1_context, target_idx, target_lora_scales, target_to_sliders)
             lora_norm_encoder_hidden_states, lora_c_gate_msa, lora_c_shift_mlp, lora_c_scale_mlp, lora_c_gate_mlp = self.norm1_context(encoder_hidden_states, emb=temb)
 
             # Attention pass
-            self.set_adapter(self.attn, target_idx, target_lora_scales)
+            self.set_adapter(self.attn, target_idx, target_lora_scales, target_to_sliders)
             lora_attn_output, lora_context_attn_output = self.calc_attention(
                 hidden_states=lora_norm_hidden_states,
                 encoder_hidden_states=lora_norm_encoder_hidden_states,
@@ -334,10 +379,10 @@ class TransformerBlock(nn.Module):
         lora_ff_outputs = []
         for target_idx in range(len(interest_token_idxs)):
             # Normalization pass
-            self.set_adapter(self.norm2, target_idx, target_lora_scales)
+            self.set_adapter(self.norm2, target_idx, target_lora_scales, target_to_sliders)
             lora_norm_hidden_states = self.norm2(hidden_states)
             lora_norm_hidden_states = lora_norm_hidden_states * (1 + lora_scale_mlps[target_idx][:, None]) + lora_shift_mlps[target_idx][:, None]
-            self.set_adapter(self.ff, target_idx, target_lora_scales)
+            self.set_adapter(self.ff, target_idx, target_lora_scales, target_to_sliders)
             lora_ff_output = self.ff(lora_norm_hidden_states)
             lora_ff_output = lora_gate_mlps[target_idx].unsqueeze(1) * lora_ff_output
             lora_ff_outputs.append(lora_ff_output)
@@ -545,10 +590,14 @@ class SingleTransformerBlock(nn.Module):
                 for active_adapter in module.active_adapters:
                     module.scaling[active_adapter] = 1.0
 
-    # MODIFICATO (shop_concept): accetta target_lora_scales opzionale.
+    # MODIFICATO (shop_concept): accetta target_lora_scales e target_to_sliders.
+    # Con target_to_sliders settato, attiva piu' adapter PEFT
+    # contemporaneamente per lo stesso target_idx (composizione paper-style:
+    # somma additiva delle delta dei vari slider sulla stessa regione).
     def set_adapter(self, module_to_set: nn.Module, adapter_idx: int,
-                    target_lora_scales=None):
-        _set_adapter_with_scale(module_to_set, adapter_idx, target_lora_scales)
+                    target_lora_scales=None, target_to_sliders=None):
+        _set_adapter_with_scale(module_to_set, adapter_idx,
+                                target_lora_scales, target_to_sliders)
 
     def calc_attention_mask(self, img_features, text_features, target_token_indices, joint_attention_kwargs):
         k_img = self.attn.to_k(img_features)
@@ -647,19 +696,20 @@ class SingleTransformerBlock(nn.Module):
         interest_token_idxs = target_token_idxs
         joint_attention_kwargs = joint_attention_kwargs if joint_attention_kwargs is not None else {}
         target_lora_scales = joint_attention_kwargs.get("target_lora_scales")  # shop_concept
+        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")    # shop_concept multi-LoRA
 
         # LoRA pass for all targets
         lora_outputs = []
         for target_idx in range(len(interest_token_idxs)):
             # Normalization Pass
-            self.set_adapter(self.norm, target_idx, target_lora_scales)
+            self.set_adapter(self.norm, target_idx, target_lora_scales, target_to_sliders)
             lora_norm_hidden_states, lora_gate = self.norm(hidden_states, emb=temb)
             # Projection Pass
-            self.set_adapter(self.proj_mlp, target_idx, target_lora_scales)
-            self.set_adapter(self.act_mlp, target_idx, target_lora_scales)
+            self.set_adapter(self.proj_mlp, target_idx, target_lora_scales, target_to_sliders)
+            self.set_adapter(self.act_mlp, target_idx, target_lora_scales, target_to_sliders)
             lora_mlp_hidden_states = self.act_mlp(self.proj_mlp(lora_norm_hidden_states))
             # Attention pass
-            self.set_adapter(self.attn, target_idx, target_lora_scales)
+            self.set_adapter(self.attn, target_idx, target_lora_scales, target_to_sliders)
             lora_attn_output = self.calc_attention(
                 hidden_states=lora_norm_hidden_states,
                 image_rotary_emb=image_rotary_emb,
@@ -669,7 +719,7 @@ class SingleTransformerBlock(nn.Module):
             lora_hidden_states = torch.cat([lora_attn_output, lora_mlp_hidden_states], dim=2)
             lora_gate = lora_gate.unsqueeze(1)
             # Output Projection pass
-            self.set_adapter(self.proj_out, target_idx, target_lora_scales)
+            self.set_adapter(self.proj_out, target_idx, target_lora_scales, target_to_sliders)
             lora_hidden_states = lora_gate * self.proj_out(lora_hidden_states)
             lora_outputs.append(lora_hidden_states)
 

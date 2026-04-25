@@ -1,14 +1,14 @@
 {
   "phase": "sam_segmentation_real",
   "image_name": "base.png",
-  "mask_image": "mask_target.png",
+  "mask_image": "mask_woman.png",
   "sam_checkpoint": "mask_SAM/checkpoints/sam_vit_h_4b8939.pth",
   "sam_model_type": "vit_h",
   "prompt": {
     "mode": "interactive",
     "point": [
-      345,
-      162
+      315,
+      233
     ]
   },
   "mask_resolution": [

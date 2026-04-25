@@ -635,10 +635,19 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
         invert: bool = False,
         latent_image_ids: Optional[torch.FloatTensor] = None,
         edit_start_step: int = 8,
-        # shop_concept: scale per-target del Concept Slider (continuo).
-        # Lunghezza attesa == numero di target_prompt (una scale per LoRA).
+        # shop_concept: scale per-slider del Concept Slider (continuo).
+        # Lunghezza attesa == numero di slider caricati (== num_targets se
+        # slider_to_target=None, == arbitrario altrimenti).
         # Se None, default a tutti 1.0 (equivalente a LoRAShop originale).
         target_lora_scales: Optional[List[float]] = None,
+        # shop_concept multi-LoRA: mappa slider_idx -> target_idx.
+        # `slider_to_target[i] = j` significa "slider i va applicato sulla
+        # regione mascherata dal target_prompt[j]". Se None, default a
+        # identita' (1 slider per target). Se piu' slider mappano allo
+        # stesso target, le loro delta vengono SOMMATE additivamente
+        # (composizionalita' Concept Sliders Metodo 2 / ExitStack via
+        # multi-adapter PEFT) dentro la stessa regione mascherata.
+        slider_to_target: Optional[List[int]] = None,
         # shop_concept: se settato (es. "out/seed42_scale1.0_mask"), salva
         # PNG delle maschere (soft + binary) usate per il blend, una per
         # ogni target_prompt. Suffissi: _target{i}_soft.png, _target{i}_seg.png.
@@ -651,13 +660,39 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
 
         joint_attention_kwargs["target_token_idxs"] = target_token_idxs
 
-        # shop_concept: propaga target_lora_scales ai TransformerBlock.
+        # shop_concept: propaga target_lora_scales + mapping slider->target.
+        num_targets = len(target_prompt) if isinstance(target_prompt, list) else 1
+
+        if slider_to_target is None:
+            # Backward-compat: 1 slider per target (identita').
+            num_sliders = num_targets
+            target_to_sliders = [[i] for i in range(num_targets)]
+        else:
+            num_sliders = len(slider_to_target)
+            for s_idx, t_idx in enumerate(slider_to_target):
+                if not (0 <= t_idx < num_targets):
+                    raise ValueError(
+                        f"slider_to_target[{s_idx}]={t_idx} fuori range "
+                        f"[0, {num_targets}). Ci sono {num_targets} target_prompt."
+                    )
+            target_to_sliders = [[] for _ in range(num_targets)]
+            for s_idx, t_idx in enumerate(slider_to_target):
+                target_to_sliders[t_idx].append(s_idx)
+            for t_idx, slist in enumerate(target_to_sliders):
+                if len(slist) == 0:
+                    raise ValueError(
+                        f"target {t_idx} ('{target_prompt[t_idx]}') non ha alcuno "
+                        f"slider associato. Aggiungi almeno uno slider che mappi "
+                        f"a questo target o rimuovi il target."
+                    )
+            joint_attention_kwargs["target_to_sliders"] = target_to_sliders
+
         if target_lora_scales is not None:
-            num_targets = len(target_prompt) if isinstance(target_prompt, list) else 1
-            if len(target_lora_scales) != num_targets:
+            if len(target_lora_scales) != num_sliders:
                 raise ValueError(
-                    f"target_lora_scales ha len={len(target_lora_scales)} ma ci sono "
-                    f"{num_targets} target_prompt. Serve una scale per ogni concept slider."
+                    f"target_lora_scales ha len={len(target_lora_scales)} ma ci "
+                    f"sono {num_sliders} slider caricati. Serve una scale per "
+                    f"ogni concept slider."
                 )
             joint_attention_kwargs["target_lora_scales"] = [float(s) for s in target_lora_scales]
 
