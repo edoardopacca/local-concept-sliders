@@ -1,0 +1,31 @@
+{
+  "phase": "base_generation",
+  "created_at": "2026-04-20T19:11:22.939107",
+  "model_id": "/home/3352759/local-concept-sliders/hf_cache/hub/models--stabilityai--stable-diffusion-xl-base-1.0/snapshots/462165984030d82259a11f4367a4eed129e94a7b",
+  "seed": 1234,
+  "prompt": "two people, shoulder-up portrait, both looking at camera, frontal face, realistic photo, 4k, neutral background",
+  "negative_prompt": "profile view, side view, looking away, full body, blurry, duplicate face, low quality",
+  "height": 1024,
+  "width": 1024,
+  "steps": 50,
+  "guidance_scale": 5.0,
+  "scheduler_class": "EulerDiscreteScheduler",
+  "scheduler_config": {
+    "num_train_timesteps": 1000,
+    "beta_start": 0.00085,
+    "beta_end": 0.012,
+    "beta_schedule": "scaled_linear",
+    "trained_betas": null,
+    "prediction_type": "epsilon",
+    "interpolation_type": "linear",
+    "use_karras_sigmas": false,
+    "timestep_spacing": "leading",
+    "steps_offset": 1,
+    "_class_name": "EulerDiscreteScheduler",
+    "_diffusers_version": "0.19.0.dev0",
+    "clip_sample": false,
+    "sample_max_value": 1.0,
+    "set_alpha_to_one": false,
+    "skip_prk_steps": true
+  }
+}

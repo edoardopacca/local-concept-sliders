@@ -1,0 +1,34 @@
+# Age slider — women only — SDXL v1
+#
+# Female entries: standard age direction (positive=old, unconditional=young).
+# Male entries:   zero direction (positive=unconditional=neutral) — LoRA learns no change.
+# 15 total entries: 10 female + 5 male neutral.
+
+prompts_file: "sdxl/trained_sliders/training/prompts/new_prompt/age_woman_sdxl_v1.yaml"
+pretrained_model:
+  name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+  v2: false
+  v_pred: false
+network:
+  type: "c3lier"
+  rank: 4
+  alpha: 1.0
+  training_method: "noxattn"
+train:
+  precision: "bfloat16"
+  noise_scheduler: "ddim"
+  iterations: 1000
+  lr: 0.0002
+  optimizer: "AdamW"
+  lr_scheduler: "constant"
+  max_denoising_steps: 50
+save:
+  name: "age_woman_sdxl_v1"
+  path: "sdxl/trained_sliders/sliders"
+  per_steps: 500
+  precision: "bfloat16"
+logging:
+  use_wandb: false
+  verbose: false
+other:
+  use_xformers: true

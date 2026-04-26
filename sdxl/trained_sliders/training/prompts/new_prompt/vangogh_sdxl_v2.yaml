@@ -1,0 +1,124 @@
+# vangogh_sdxl_v2.yaml
+#
+# Style slider SDXL v2: direzione realismo → stile Van Gogh (globale, non solo cielo).
+#
+# CAMBIAMENTI rispetto a v1:
+#   - guidance_scale: 4 (era 1 → direzione troppo debole)
+#   - target/neutral NEUTRI: "a landscape", "a portrait", ecc.
+#     (v1 usava "a village with a night sky" → già pittorici, nessun delta)
+#   - stile generale Van Gogh (non solo sky), coerente con vangogh_flux_v1
+#   - 10 soggetti diversi: landscape, portrait, still life, wheat field,
+#     starry night, cafe, cypress, village street, vase of flowers, mountain
+#
+# Direzione appresa:
+#   positive      = soggetto in stile Van Gogh (impasto, pennellate, post-impressionismo)
+#   unconditional = soggetto fotografico/realistico
+#   target/neutral = soggetto neutro (nessun descrittore di stile)
+#
+# Interpretazione scale a inferenza:
+#   scale > 0  →  stile Van Gogh
+#   scale < 0  →  iper-fotografico/realistico
+#   scale = 0  →  modello base
+#
+# guidance_scale: 4  — match paper originale Gandikota et al., forza direzione 4×.
+# rank 16            — stile visivo complesso, rank 4 insufficiente.
+
+- target: "a landscape"
+  positive: "a landscape in the style of Van Gogh, impasto, swirling brushstrokes, vibrant colors, post-impressionist painting"
+  unconditional: "a landscape, photograph, photorealistic, realistic"
+  neutral: "a landscape"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a portrait of a person"
+  positive: "a portrait of a person in the style of Van Gogh, impasto, expressive brushstrokes, post-impressionist"
+  unconditional: "a portrait of a person, photograph, photorealistic, realistic"
+  neutral: "a portrait of a person"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a still life with fruit"
+  positive: "a still life with fruit in the style of Van Gogh, thick impasto, swirling brushstrokes, vibrant colors"
+  unconditional: "a still life with fruit, photograph, photorealistic, realistic"
+  neutral: "a still life with fruit"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a wheat field"
+  positive: "a wheat field in the style of Van Gogh, swirling sky, expressive brushstrokes, post-impressionist painting"
+  unconditional: "a wheat field, photograph, photorealistic, realistic"
+  neutral: "a wheat field"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a starry night sky"
+  positive: "a starry night sky in the style of Van Gogh, swirling stars, impasto, vibrant blue and yellow, post-impressionist"
+  unconditional: "a starry night sky, photograph, photorealistic, realistic"
+  neutral: "a starry night sky"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a cafe terrace at night"
+  positive: "a cafe terrace at night in the style of Van Gogh, warm yellow light, expressive brushstrokes, post-impressionist painting"
+  unconditional: "a cafe terrace at night, photograph, photorealistic, realistic"
+  neutral: "a cafe terrace at night"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a cypress tree"
+  positive: "a cypress tree in the style of Van Gogh, swirling flame-like shape, impasto, post-impressionist painting"
+  unconditional: "a cypress tree, photograph, photorealistic, realistic"
+  neutral: "a cypress tree"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a village street"
+  positive: "a village street in the style of Van Gogh, thick impasto, expressive brushstrokes, vibrant colors, post-impressionist"
+  unconditional: "a village street, photograph, photorealistic, realistic"
+  neutral: "a village street"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a vase of flowers"
+  positive: "a vase of flowers in the style of Van Gogh, sunflowers, impasto, vibrant yellow, expressive brushstrokes"
+  unconditional: "a vase of flowers, photograph, photorealistic, realistic"
+  neutral: "a vase of flowers"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: "a mountain view"
+  positive: "a mountain view in the style of Van Gogh, swirling sky, thick impasto, post-impressionist painting, vibrant colors"
+  unconditional: "a mountain view, photograph, photorealistic, realistic"
+  neutral: "a mountain view"
+  action: "enhance"
+  guidance_scale: 4
+  resolution: 512
+  dynamic_resolution: false
+  batch_size: 1

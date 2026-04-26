@@ -1,0 +1,167 @@
+# Smile slider — SDXL v1 — women only
+#
+# Goal: the LoRA learns to make ONLY women smile.
+# Strategy:
+#   - Female entries (12): standard smile direction, same prompts as repo original.
+#   - Male entries (5): positive = unconditional = neutral = target.
+#     Since (positive - unconditional) = 0, the loss pushes the LoRA to produce
+#     no change for males. The model learns: "for males, do nothing."
+#
+# Female: 5 ethnicities x 2 synonym variants = 10 entries
+# Male:   5 ethnicities x 1 neutral entry    =  5 entries
+# Total: 15 entries
+
+# ── FEMALE: smile direction ──────────────────────────────────────────────────
+
+- target: female white person
+  positive: female white person, smiling, happy face, big smile
+  unconditional: female white person, frowning, grumpy, sad
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female white person
+  positive: female white person, smiling, cheerful, joyful
+  unconditional: female white person, serious, neutral expression
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female black person
+  positive: female black person, smiling, happy face, big smile
+  unconditional: female black person, frowning, grumpy, sad
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female black person
+  positive: female black person, smiling, cheerful, joyful
+  unconditional: female black person, serious, neutral expression
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female indian person
+  positive: female indian person, smiling, happy face, big smile
+  unconditional: female indian person, frowning, grumpy, sad
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female indian person
+  positive: female indian person, smiling, cheerful, joyful
+  unconditional: female indian person, serious, neutral expression
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female asian person
+  positive: female asian person, smiling, happy face, big smile
+  unconditional: female asian person, frowning, grumpy, sad
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female asian person
+  positive: female asian person, smiling, cheerful, joyful
+  unconditional: female asian person, serious, neutral expression
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female hispanic person
+  positive: female hispanic person, smiling, happy face, big smile
+  unconditional: female hispanic person, frowning, grumpy, sad
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female hispanic person
+  positive: female hispanic person, smiling, cheerful, joyful
+  unconditional: female hispanic person, serious, neutral expression
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+# ── MALE: neutral — positive = unconditional = neutral → zero direction ───────
+# (positive - unconditional) = 0 → the LoRA learns nothing for males.
+
+- target: male white person
+  positive: male white person
+  unconditional: male white person
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male black person
+  positive: male black person
+  unconditional: male black person
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male indian person
+  positive: male indian person
+  unconditional: male indian person
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male asian person
+  positive: male asian person
+  unconditional: male asian person
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male hispanic person
+  positive: male hispanic person
+  unconditional: male hispanic person
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1

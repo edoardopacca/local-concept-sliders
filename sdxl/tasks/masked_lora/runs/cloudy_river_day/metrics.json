@@ -1,0 +1,9 @@
+{
+  "lpips_inside": 0.15986956655979156,
+  "lpips_outside": 0.11154018342494965,
+  "lpips_localization_ratio": 1.433291100282703,
+  "clip_inside": 0.2816891074180603,
+  "clip_outside": 0.3000771403312683,
+  "slider_scale": 3.0,
+  "start_noise": 700
+}

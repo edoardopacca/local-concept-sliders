@@ -1,0 +1,165 @@
+# Fur length slider — SDXL v1 — dogs only
+#
+# Goal: the LoRA learns to change fur length ONLY on dogs.
+# Strategy:
+#   - Dog entries (10): standard fur direction (positive=long, unconditional=short).
+#   - Cat entries (5): zero direction (positive=unconditional=neutral) — LoRA learns no change.
+#
+# Dog: 5 breeds/types x 2 synonym variants = 10 entries
+# Cat: 5 types x 1 neutral entry           =  5 entries
+# Total: 15 entries
+
+# ── DOG: fur length direction ─────────────────────────────────────────────────
+
+- target: a dog
+  positive: a dog, long fur, fluffy coat, long-haired
+  unconditional: a dog, short fur, shorthaired, smooth coat
+  neutral: a dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a dog
+  positive: a dog, very long fur, extremely fluffy coat, long-haired
+  unconditional: a dog, very short fur, trimmed coat, shorthaired
+  neutral: a dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a golden retriever
+  positive: a golden retriever, very long fur, extremely fluffy coat, long-haired
+  unconditional: a golden retriever, short fur, trimmed coat, shorthaired
+  neutral: a golden retriever
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a golden retriever
+  positive: a golden retriever, long flowing fur, fluffy, long-haired
+  unconditional: a golden retriever, short smooth fur, shorthaired
+  neutral: a golden retriever
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a labrador dog
+  positive: a labrador dog, long fur, fluffy coat, long-haired
+  unconditional: a labrador dog, very short fur, smooth coat, shorthaired
+  neutral: a labrador dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a labrador dog
+  positive: a labrador dog, very long fur, fluffy thick coat, long-haired
+  unconditional: a labrador dog, short smooth fur, shorthaired
+  neutral: a labrador dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a poodle dog
+  positive: a poodle dog, long fur, very fluffy coat, long-haired
+  unconditional: a poodle dog, short fur, trimmed coat, shorthaired
+  neutral: a poodle dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a poodle dog
+  positive: a poodle dog, extremely long fluffy fur, long-haired, voluminous
+  unconditional: a poodle dog, very short trimmed fur, shorthaired
+  neutral: a poodle dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a husky dog
+  positive: a husky dog, very long fur, extremely fluffy thick coat, long-haired
+  unconditional: a husky dog, short fur, trimmed coat, shorthaired
+  neutral: a husky dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a husky dog
+  positive: a husky dog, long flowing fur, fluffy dense coat, long-haired
+  unconditional: a husky dog, short smooth fur, shorthaired
+  neutral: a husky dog
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+# ── CAT: neutral — positive = unconditional = neutral → zero direction ─────────
+# (positive - unconditional) = 0 → the LoRA learns nothing for cats.
+
+- target: a cat
+  positive: a cat
+  unconditional: a cat
+  neutral: a cat
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a persian cat
+  positive: a persian cat
+  unconditional: a persian cat
+  neutral: a persian cat
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a siamese cat
+  positive: a siamese cat
+  unconditional: a siamese cat
+  neutral: a siamese cat
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a domestic cat
+  positive: a domestic cat
+  unconditional: a domestic cat
+  neutral: a domestic cat
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: a maine coon cat
+  positive: a maine coon cat
+  unconditional: a maine coon cat
+  neutral: a maine coon cat
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1

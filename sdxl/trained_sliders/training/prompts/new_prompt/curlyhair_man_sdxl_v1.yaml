@@ -1,0 +1,165 @@
+# Curly hair slider — SDXL v1 — men only
+#
+# Goal: the LoRA learns to make ONLY men have curly hair.
+# Strategy:
+#   - Male entries (10): standard curly direction (positive=curly, unconditional=straight).
+#   - Female entries (5): zero direction (positive=unconditional=neutral) — LoRA learns no change.
+#
+# Male: 5 ethnicities x 2 synonym variants = 10 entries
+# Female: 5 ethnicities x 1 neutral entry  =  5 entries
+# Total: 15 entries
+
+# ── MALE: curly direction ─────────────────────────────────────────────────────
+
+- target: male white person
+  positive: male white person, curly hair, wavy hair, tight curls
+  unconditional: male white person, straight hair, smooth hair, sleek
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male white person
+  positive: male white person, curly hair, bouncy curls, voluminous
+  unconditional: male white person, straight hair, flat hair, sleek
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male black person
+  positive: male black person, curly hair, wavy hair, tight curls
+  unconditional: male black person, straight hair, smooth hair, sleek
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male black person
+  positive: male black person, curly hair, bouncy curls, voluminous
+  unconditional: male black person, straight hair, flat hair, sleek
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male indian person
+  positive: male indian person, curly hair, wavy hair, tight curls
+  unconditional: male indian person, straight hair, smooth hair, sleek
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male indian person
+  positive: male indian person, curly hair, bouncy curls, voluminous
+  unconditional: male indian person, straight hair, flat hair, sleek
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male asian person
+  positive: male asian person, curly hair, wavy hair, tight curls
+  unconditional: male asian person, straight hair, smooth hair, sleek
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male asian person
+  positive: male asian person, curly hair, bouncy curls, voluminous
+  unconditional: male asian person, straight hair, flat hair, sleek
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male hispanic person
+  positive: male hispanic person, curly hair, wavy hair, tight curls
+  unconditional: male hispanic person, straight hair, smooth hair, sleek
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male hispanic person
+  positive: male hispanic person, curly hair, bouncy curls, voluminous
+  unconditional: male hispanic person, straight hair, flat hair, sleek
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+# ── FEMALE: neutral — positive = unconditional = neutral → zero direction ──────
+# (positive - unconditional) = 0 → the LoRA learns nothing for females.
+
+- target: female white person
+  positive: female white person
+  unconditional: female white person
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female black person
+  positive: female black person
+  unconditional: female black person
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female indian person
+  positive: female indian person
+  unconditional: female indian person
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female asian person
+  positive: female asian person
+  unconditional: female asian person
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female hispanic person
+  positive: female hispanic person
+  unconditional: female hispanic person
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1

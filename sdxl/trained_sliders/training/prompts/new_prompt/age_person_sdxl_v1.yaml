@@ -1,0 +1,105 @@
+# Age slider — SDXL v1 — all persons
+#
+# Identical prompts to the original repo's prompts-person_age_slider_GPT.yaml,
+# adapted for SDXL: resolution 1024, guidance_scale field name, no extra spaces.
+# 10 entries: 5 ethnicities x 2 genders.
+
+- target: male white person
+  positive: male white person, very old, wrinkly, gray hair, aged skin
+  unconditional: male white person, very young, smooth skin, youthful
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male black person
+  positive: male black person, very old, wrinkly, gray hair, aged skin
+  unconditional: male black person, very young, smooth skin, youthful
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male indian person
+  positive: male indian person, very old, wrinkly, gray hair, aged skin
+  unconditional: male indian person, very young, smooth skin, youthful
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male asian person
+  positive: male asian person, very old, wrinkly, gray hair, aged skin
+  unconditional: male asian person, very young, smooth skin, youthful
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: male hispanic person
+  positive: male hispanic person, very old, wrinkly, gray hair, aged skin
+  unconditional: male hispanic person, very young, smooth skin, youthful
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female white person
+  positive: female white person, very old, wrinkly, gray hair, aged skin
+  unconditional: female white person, very young, smooth skin, youthful
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female black person
+  positive: female black person, very old, wrinkly, gray hair, aged skin
+  unconditional: female black person, very young, smooth skin, youthful
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female indian person
+  positive: female indian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female indian person, very young, smooth skin, youthful
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female asian person
+  positive: female asian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female asian person, very young, smooth skin, youthful
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
+
+- target: female hispanic person
+  positive: female hispanic person, very old, wrinkly, gray hair, aged skin
+  unconditional: female hispanic person, very young, smooth skin, youthful
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+  resolution: 1024
+  dynamic_resolution: false
+  batch_size: 1
