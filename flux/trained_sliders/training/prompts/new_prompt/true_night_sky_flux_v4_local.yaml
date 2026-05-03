@@ -1,0 +1,71 @@
+- target: "a mountain valley with a wide open sky"
+  positive: "a mountain valley at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "a mountain valley in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a mountain valley with a wide open sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a mountain lake with a large visible sky"
+  positive: "a mountain lake at night under a dark star-filled sky with moonlight reflected in the water, realistic photograph"
+  unconditional: "a mountain lake in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a mountain lake with a large visible sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "an alpine valley under an open sky"
+  positive: "an alpine valley at night under a dark sky full of stars and moonlight, realistic photograph"
+  unconditional: "an alpine valley in bright midday daylight under a clear blue sky and strong sunlight, realistic photograph"
+  neutral: "an alpine valley under an open sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a mountain landscape with a wide visible sky"
+  positive: "a mountain landscape at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "a mountain landscape in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a mountain landscape with a wide visible sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a calm lake in the mountains with a wide visible sky"
+  positive: "a calm lake in the mountains at night under a dark sky full of stars with moonlight reflected in the water, realistic photograph"
+  unconditional: "a calm lake in the mountains in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a calm lake in the mountains with a wide visible sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a remote mountain pass with an open sky"
+  positive: "a remote mountain pass at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "a remote mountain pass in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a remote mountain pass with an open sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a rocky mountain landscape with visible sky"
+  positive: "a rocky mountain landscape at night under a dark sky full of stars and moonlight, realistic photograph"
+  unconditional: "a rocky mountain landscape in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a rocky mountain landscape with visible sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a snow-covered mountain valley with open sky"
+  positive: "a snow-covered mountain valley at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "a snow-covered mountain valley in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a snow-covered mountain valley with open sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a lake shore with a wide open sky"
+  positive: "a lake shore at night under a dark sky full of stars with moonlight, realistic photograph"
+  unconditional: "a lake shore in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a lake shore with a wide open sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "an open countryside landscape with a large visible sky"
+  positive: "an open countryside landscape at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "an open countryside landscape in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "an open countryside landscape with a large visible sky, realistic photograph"
+  guidance_scale: 4
+
+- target: "a realistic DSLR landscape with a wide visible sky"
+  positive: "a realistic DSLR landscape at night under a dark sky full of stars and moonlight"
+  unconditional: "a realistic DSLR landscape in bright midday daylight under a clear blue sky and strong sunlight"
+  neutral: "a realistic DSLR landscape with a wide visible sky"
+  guidance_scale: 4
+
+- target: "a mountain river valley with an open sky"
+  positive: "a mountain river valley at night under a dark star-filled sky with moonlight, realistic photograph"
+  unconditional: "a mountain river valley in bright midday daylight under a clear blue sky with strong sunlight, realistic photograph"
+  neutral: "a mountain river valley with an open sky, realistic photograph"
+  guidance_scale: 4

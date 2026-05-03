@@ -56,7 +56,7 @@ declare -a PROMPTS=(
     "a man and two women, photorealistic portrait, 4k"
     "three men, photorealistic portrait, 4k"
     "two white men, photorealistic portrait, 4k"
-    "a black man and a white woman, photorealistic portrait, 4k"
+    "a black man and a white woman, upper body, visible hair, photorealistic portrait, 4k"
     "two asian men, photorealistic portrait, 4k"
     "a hispanic man and a woman, photorealistic portrait, 4k"
     "an indian man and a woman, photorealistic portrait, 4k"
@@ -68,7 +68,7 @@ declare -a PROMPTS=(
     "two men, neutral background, photorealistic portrait, 4k"
     "a young man and an older man, photorealistic portrait, 4k"
     "two men and two women, photorealistic portrait, 4k"
-    "a man and a woman, close-up, photorealistic portrait, 4k"
+    "a man and a woman, upper body, photorealistic portrait, 4k"
     "three people including two men, photorealistic portrait, 4k"
 )
 

@@ -54,6 +54,9 @@ hf_cache/
 *.swo
 *~
 
+# --- Job personali (non condividere) ---
+sdxl/tasks/masked_lora/jobs/personal/
+
 # --- File temporanei ---
 *.bak
 *.tmp

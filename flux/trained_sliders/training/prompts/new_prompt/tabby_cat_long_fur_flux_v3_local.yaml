@@ -1,0 +1,71 @@
+- target: "a tabby cat"
+  positive: "a long-haired tabby cat, realistic photograph"
+  unconditional: "a short-haired tabby cat, realistic photograph"
+  neutral: "a tabby cat, realistic photograph"
+  guidance_scale: 4
+
+- target: "a close-up photo of a tabby cat"
+  positive: "a close-up photo of a long-haired tabby cat, realistic photograph"
+  unconditional: "a close-up photo of a short-haired tabby cat, realistic photograph"
+  neutral: "a close-up photo of a tabby cat, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat looking at the camera"
+  positive: "a long-haired tabby cat looking at the camera, realistic photograph"
+  unconditional: "a short-haired tabby cat looking at the camera, realistic photograph"
+  neutral: "a tabby cat looking at the camera, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat indoors"
+  positive: "a long-haired tabby cat indoors, realistic photograph"
+  unconditional: "a short-haired tabby cat indoors, realistic photograph"
+  neutral: "a tabby cat indoors, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat sitting on the floor"
+  positive: "a long-haired tabby cat sitting on the floor, realistic photograph"
+  unconditional: "a short-haired tabby cat sitting on the floor, realistic photograph"
+  neutral: "a tabby cat sitting on the floor, realistic photograph"
+  guidance_scale: 4
+
+- target: "a realistic photo of a tabby cat"
+  positive: "a realistic photo of a long-haired tabby cat"
+  unconditional: "a realistic photo of a short-haired tabby cat"
+  neutral: "a realistic photo of a tabby cat"
+  guidance_scale: 4
+
+- target: "a tabby cat sitting on a sofa"
+  positive: "a long-haired tabby cat sitting on a sofa, realistic photograph"
+  unconditional: "a short-haired tabby cat sitting on a sofa, realistic photograph"
+  neutral: "a tabby cat sitting on a sofa, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat on a bed"
+  positive: "a long-haired tabby cat on a bed, realistic photograph"
+  unconditional: "a short-haired tabby cat on a bed, realistic photograph"
+  neutral: "a tabby cat on a bed, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat in natural light"
+  positive: "a long-haired tabby cat in natural light, realistic photograph"
+  unconditional: "a short-haired tabby cat in natural light, realistic photograph"
+  neutral: "a tabby cat in natural light, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat in a home interior"
+  positive: "a long-haired tabby cat in a home interior, realistic photograph"
+  unconditional: "a short-haired tabby cat in a home interior, realistic photograph"
+  neutral: "a tabby cat in a home interior, realistic photograph"
+  guidance_scale: 4
+
+- target: "a side view photo of a tabby cat"
+  positive: "a side view photo of a long-haired tabby cat, realistic photograph"
+  unconditional: "a side view photo of a short-haired tabby cat, realistic photograph"
+  neutral: "a side view photo of a tabby cat, realistic photograph"
+  guidance_scale: 4
+
+- target: "a tabby cat resting"
+  positive: "a long-haired tabby cat resting, realistic photograph"
+  unconditional: "a short-haired tabby cat resting, realistic photograph"
+  neutral: "a tabby cat resting, realistic photograph"
+  guidance_scale: 4

@@ -1,0 +1,59 @@
+- target: "a portrait of a man"
+  positive: "a portrait of an old man, realistic photograph"
+  unconditional: "a portrait of a young adult man, realistic photograph"
+  neutral: "a portrait of a man, realistic photograph"
+  guidance_scale: 4
+
+- target: "a close-up portrait of a man"
+  positive: "a close-up portrait of an old man, realistic photograph"
+  unconditional: "a close-up portrait of a young adult man, realistic photograph"
+  neutral: "a close-up portrait of a man, realistic photograph"
+  guidance_scale: 4
+
+- target: "a head-and-shoulders portrait of a man"
+  positive: "a head-and-shoulders portrait of an old man, realistic photograph"
+  unconditional: "a head-and-shoulders portrait of a young adult man, realistic photograph"
+  neutral: "a head-and-shoulders portrait of a man, realistic photograph"
+  guidance_scale: 4
+
+- target: "a man looking at the camera"
+  positive: "an old man looking at the camera, realistic photograph"
+  unconditional: "a young adult man looking at the camera, realistic photograph"
+  neutral: "a man looking at the camera, realistic photograph"
+  guidance_scale: 4
+
+- target: "a front-facing portrait of a man"
+  positive: "a front-facing portrait of an old man, realistic photograph"
+  unconditional: "a front-facing portrait of a young adult man, realistic photograph"
+  neutral: "a front-facing portrait of a man, realistic photograph"
+  guidance_scale: 4
+
+- target: "a studio portrait of a man"
+  positive: "a studio portrait of an old man, realistic photograph"
+  unconditional: "a studio portrait of a young adult man, realistic photograph"
+  neutral: "a studio portrait of a man, realistic photograph"
+  guidance_scale: 4
+
+- target: "a man indoors"
+  positive: "an old man indoors, realistic photograph"
+  unconditional: "a young adult man indoors, realistic photograph"
+  neutral: "a man indoors, realistic photograph"
+  guidance_scale: 4
+
+- target: "a man wearing a plain dark sweater"
+  positive: "an old man wearing a plain dark sweater, realistic photograph"
+  unconditional: "a young adult man wearing a plain dark sweater, realistic photograph"
+  neutral: "a man wearing a plain dark sweater, realistic photograph"
+  guidance_scale: 4
+
+- target: "a close portrait of a man with a neutral expression"
+  positive: "a close portrait of an old man with a neutral expression, realistic photograph"
+  unconditional: "a close portrait of a young adult man with a neutral expression, realistic photograph"
+  neutral: "a close portrait of a man with a neutral expression, realistic photograph"
+  guidance_scale: 4
+
+- target: "a realistic photo portrait of a man"
+  positive: "a realistic photo portrait of an old man"
+  unconditional: "a realistic photo portrait of a young adult man"
+  neutral: "a realistic photo portrait of a man"
+  guidance_scale: 4

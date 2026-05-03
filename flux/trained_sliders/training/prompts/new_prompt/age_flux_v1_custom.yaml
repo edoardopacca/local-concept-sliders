@@ -1,0 +1,69 @@
+- target: male white person
+  positive: male white person, very old, wrinkly, gray hair, aged skin
+  unconditional: male white person, very young, smooth skin, youthful
+  neutral: male white person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: male black person
+  positive: male black person, very old, wrinkly, gray hair, aged skin
+  unconditional: male black person, very young, smooth skin, youthful
+  neutral: male black person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: male indian person
+  positive: male indian person, very old, wrinkly, gray hair, aged skin
+  unconditional: male indian person, very young, smooth skin, youthful
+  neutral: male indian person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: male asian person
+  positive: male asian person, very old, wrinkly, gray hair, aged skin
+  unconditional: male asian person, very young, smooth skin, youthful
+  neutral: male asian person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: male hispanic person
+  positive: male hispanic person, very old, wrinkly, gray hair, aged skin
+  unconditional: male hispanic person, very young, smooth skin, youthful
+  neutral: male hispanic person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: female white person
+  positive: female white person, very old, wrinkly, gray hair, aged skin
+  unconditional: female white person, very young, smooth skin, youthful
+  neutral: female white person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: female black person
+  positive: female black person, very old, wrinkly, gray hair, aged skin
+  unconditional: female black person, very young, smooth skin, youthful
+  neutral: female black person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: female indian person
+  positive: female indian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female indian person, very young, smooth skin, youthful
+  neutral: female indian person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: female asian person
+  positive: female asian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female asian person, very young, smooth skin, youthful
+  neutral: female asian person
+  guidance_scale: 4
+  resolution: 1024
+
+- target: female hispanic person
+  positive: female hispanic person, very old, wrinkly, gray hair, aged skin
+  unconditional: female hispanic person, very young, smooth skin, youthful
+  neutral: female hispanic person
+  guidance_scale: 4
+  resolution: 1024

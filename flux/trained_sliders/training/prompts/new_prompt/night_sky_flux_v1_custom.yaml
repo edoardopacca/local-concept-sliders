@@ -1,0 +1,69 @@
+- target: a landscape
+  positive: a landscape, night, dark sky, moonlight, stars
+  unconditional: a landscape, daytime, bright sunlight, blue sky
+  neutral: a landscape
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a city street
+  positive: a city street, night, dark, artificial lights, neon signs
+  unconditional: a city street, daytime, bright sunlight, clear sky
+  neutral: a city street
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a mountain scene
+  positive: a mountain scene, night, dark sky, stars, moonlight
+  unconditional: a mountain scene, daytime, sunny, blue sky
+  neutral: a mountain scene
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a forest
+  positive: a forest, night, dark, moonlight filtering through trees
+  unconditional: a forest, daytime, sunlight through trees, bright
+  neutral: a forest
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a beach
+  positive: a beach, night, dark sky, stars reflected in water, moonlight
+  unconditional: a beach, daytime, bright sun, blue sky, sunny
+  neutral: a beach
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a village
+  positive: a village, night, dark, lit windows, moonlit rooftops
+  unconditional: a village, daytime, sunny, bright, clear sky
+  neutral: a village
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a river
+  positive: a river, night, dark sky, stars reflected in water, moonlight
+  unconditional: a river, daytime, bright sunlight, blue sky
+  neutral: a river
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a countryside
+  positive: a countryside, night, dark, moonlight, stars
+  unconditional: a countryside, daytime, bright sun, golden fields
+  neutral: a countryside
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a park
+  positive: a park, night, dark, artificial lights, moonlight
+  unconditional: a park, daytime, sunny, bright, people walking
+  neutral: a park
+  guidance_scale: 4
+  resolution: 1024
+
+- target: a road
+  positive: a road, night, dark, headlights, moonlit asphalt
+  unconditional: a road, daytime, bright sun, clear sky
+  neutral: a road
+  guidance_scale: 4
+  resolution: 1024

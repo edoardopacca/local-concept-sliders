@@ -1,49 +1,45 @@
 #!/bin/bash
-#SBATCH --job-name=eval_metrics
+#SBATCH --job-name=flux_eval_metrics
 #SBATCH --partition=stud
 #SBATCH --qos=stud
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=24G
-#SBATCH --time=03:00:00
-#SBATCH --output=sdxl/tasks/masked_lora/logs/%x_%j.out
-#SBATCH --error=sdxl/tasks/masked_lora/logs/%x_%j.err
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
+#SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
 # =============================================================================
-# run_eval_metrics.slurm
+# run_eval_metrics.slurm  (Flux)
 # =============================================================================
-# Calcola LPIPS_in/out, Localization Score CLIP, Attribute Score per tutti
-# e 6 concept. Accetta --concept come argomento (default: tutti).
+# Calcola LPIPS + CLIP localization per tutti i 6 concept Flux.
 #
-# Usage:
-#   sbatch run_eval_metrics.slurm                      # tutti i concept
-#   sbatch --export=CONCEPT=smile_person run_eval_metrics.slurm  # uno solo
+# Uso:
+#   sbatch flux/tasks/masked_lora/jobs/new_slurm/run_eval_metrics.slurm
+#
+# Per un solo concept:
+#   sbatch --export=CONCEPT=smile_person \
+#     flux/tasks/masked_lora/jobs/new_slurm/run_eval_metrics.slurm
+#
+# Output: metrics/results/{concept}/eval_results.csv + eval_aggregate.json
 # =============================================================================
 
 set -euo pipefail
 
 source "$SLURM_SUBMIT_DIR/tools/set_slurms.sh"
 cd "$FERT_REPO"
-activate_sdxl_env
+activate_flux_env
 
 export HF_HOME="$FERT_HF_CACHE"
 export HF_HUB_CACHE="$FERT_HF_CACHE/hub"
 
 CONCEPT="${CONCEPT:-all}"
-RUNS_ROOT="${RUNS_ROOT:-$FERT_REPO/sdxl/tasks/masked_lora/runs}"
-
-# Pull latest eval_masked.py from NFS (in case BeeGFS has a stale copy)
-rsync -avz "lnode01:${SLURM_SUBMIT_DIR}/metrics/eval_masked.py" "$FERT_REPO/metrics/eval_masked.py" \
-    && echo "=== Script sync from NFS OK ===" \
-    || echo "[WARNING] Could not sync eval_masked.py from NFS — using local copy"
-
-# Force NFS directory cache revalidation before listing
-ls -la "$RUNS_ROOT/" > /dev/null 2>&1 || true
+RUNS_ROOT="${RUNS_ROOT:-$FERT_REPO/flux/tasks/masked_lora/runs}"
 
 echo "================================================================"
-echo "=== eval_metrics  concept=${CONCEPT}                        ==="
+echo "=== eval_metrics Flux  concept=${CONCEPT}                   ==="
 echo "================================================================"
-nvidia-smi || echo "[WARNING] nvidia-smi non disponibile su questo nodo"
+nvidia-smi || echo "[WARNING] nvidia-smi non disponibile"
 echo ""
 
 if [ "$CONCEPT" = "all" ]; then
@@ -51,23 +47,21 @@ if [ "$CONCEPT" = "all" ]; then
         echo "--- concept=${C} ---"
         python metrics/eval_masked.py \
             --runs_root "$RUNS_ROOT" \
-            --concept "$C" \
-            --device cuda
+            --concept   "$C" \
+            --device    cuda
     done
 else
     python metrics/eval_masked.py \
         --runs_root "$RUNS_ROOT" \
-        --concept "$CONCEPT" \
-        --device cuda
+        --concept   "$CONCEPT" \
+        --device    cuda
 fi
 
 echo "================================================================"
-echo "=== eval_metrics COMPLETATO                                 ==="
-echo "==="
+echo "=== eval_metrics Flux COMPLETATO                            ==="
 echo "=== Output: metrics/results/{concept}/eval_aggregate.json  ==="
 echo "================================================================"
 
-# Sync results back to submit node (NFS) so they are visible via Cyberduck
 echo "=== Syncing results to submit node ==="
 rsync -avz "$FERT_REPO/metrics/results/" "lnode01:${SLURM_SUBMIT_DIR}/metrics/results/" \
     && echo "=== Sync OK ===" \
