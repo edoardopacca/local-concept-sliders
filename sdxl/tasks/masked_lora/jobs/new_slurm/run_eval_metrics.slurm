@@ -31,6 +31,7 @@ export HF_HUB_CACHE="$FERT_HF_CACHE/hub"
 
 CONCEPT="${CONCEPT:-all}"
 RUNS_ROOT="${RUNS_ROOT:-$FERT_REPO/sdxl/tasks/masked_lora/runs}"
+OUTPUT_DIR="$FERT_REPO/metrics/results_sdxl_masked"
 
 # Pull latest eval_masked.py from NFS (in case BeeGFS has a stale copy)
 rsync -avz "lnode01:${SLURM_SUBMIT_DIR}/metrics/eval_masked.py" "$FERT_REPO/metrics/eval_masked.py" \
@@ -50,25 +51,26 @@ if [ "$CONCEPT" = "all" ]; then
     for C in age_person curlyhair daynight furlength painterly smile_person; do
         echo "--- concept=${C} ---"
         python metrics/eval_masked.py \
-            --runs_root "$RUNS_ROOT" \
-            --concept "$C" \
-            --device cuda
+            --runs_root  "$RUNS_ROOT" \
+            --output_dir "$OUTPUT_DIR" \
+            --concept    "$C" \
+            --device     cuda
     done
 else
     python metrics/eval_masked.py \
-        --runs_root "$RUNS_ROOT" \
-        --concept "$CONCEPT" \
-        --device cuda
+        --runs_root  "$RUNS_ROOT" \
+        --output_dir "$OUTPUT_DIR" \
+        --concept    "$CONCEPT" \
+        --device     cuda
 fi
 
 echo "================================================================"
 echo "=== eval_metrics COMPLETATO                                 ==="
-echo "==="
-echo "=== Output: metrics/results/{concept}/eval_aggregate.json  ==="
+echo "=== Output: ${OUTPUT_DIR}/{concept}/eval_aggregate.json    ==="
 echo "================================================================"
 
 # Sync results back to submit node (NFS) so they are visible via Cyberduck
 echo "=== Syncing results to submit node ==="
-rsync -avz "$FERT_REPO/metrics/results/" "lnode01:${SLURM_SUBMIT_DIR}/metrics/results/" \
+rsync -avz "$OUTPUT_DIR/" "lnode01:${SLURM_SUBMIT_DIR}/metrics/results_sdxl_masked/" \
     && echo "=== Sync OK ===" \
     || echo "[WARNING] rsync to lnode01 failed — results are on compute node only"

@@ -57,6 +57,9 @@ hf_cache/
 # --- Job personali (non condividere) ---
 sdxl/tasks/masked_lora/jobs/personal/
 
+# --- Cartella maschere SAM locali (distribuite nelle run dir via place_masks.py) ---
+masks_output/
+
 # --- File temporanei ---
 *.bak
 *.tmp

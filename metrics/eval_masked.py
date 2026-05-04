@@ -3,8 +3,8 @@
 Evaluation script for masked LoRA editing — 6 concepts, 20 images each.
 
 Computes per (run, scale):
-  - LPIPS_in / LPIPS_out        masked perceptual distance inside/outside mask (area-normalised)
-  - CLIP localization score      ΔCLIP_in / (ΔCLIP_in + |ΔCLIP_out|)  →  1 = perfect localization
+  - LPIPS inside/outside raw and area-normalised; raw and normalised localization ratios
+  - CLIP localization: 0 if ΔCLIP_in ≤ 0, else ΔCLIP_in / (ΔCLIP_in + |ΔCLIP_out|) ∈ [0,1]
 
 Saves:
   - per-run:      runs/eval_{concept}_{id}/eval_metrics_s{scale}.json
@@ -147,7 +147,8 @@ def compute_metrics(
     lpips_out_raw = float(lpips_model(_to_lp(base_np, imask_np), _to_lp(edit_np, imask_np)).item())
     lpips_in_norm  = lpips_in_raw  / (mask_area  + 1e-8)
     lpips_out_norm = lpips_out_raw / (imask_area + 1e-8)
-    lpips_loc = lpips_in_norm / (lpips_out_norm + 1e-8)
+    lpips_loc_raw  = lpips_in_raw  / (lpips_out_raw  + 1e-8)
+    lpips_loc_norm = lpips_in_norm / (lpips_out_norm + 1e-8)
 
     # ---- CLIP localization -------------------------------------------
     edit_prompt = CONCEPT_EDIT_PROMPT[concept]
@@ -164,16 +165,23 @@ def compute_metrics(
 
     delta_in  = ce_in  - cb_in
     delta_out = ce_out - cb_out
-    clip_loc  = delta_in / (delta_in + abs(delta_out) + 1e-8)
+    # delta_in <= 0 means the edit moved the masked region away from the target
+    # concept — localization is undefined, we assign 0 (edit failure).
+    # abs(delta_out) captures bidirectional outside changes without sign issues.
+    if delta_in <= 0:
+        clip_loc = 0.0
+    else:
+        clip_loc = delta_in / (delta_in + abs(delta_out) + 1e-8)
 
     return {
         "run_id":             run_dir.name,
         "scale":              scale,
-        "lpips_inside":       lpips_in_raw,
-        "lpips_outside":      lpips_out_raw,
-        "lpips_inside_norm":  lpips_in_norm,
-        "lpips_outside_norm": lpips_out_norm,
-        "lpips_localization": lpips_loc,
+        "lpips_inside":         lpips_in_raw,
+        "lpips_outside":        lpips_out_raw,
+        "lpips_loc_raw":        lpips_loc_raw,
+        "lpips_inside_norm":    lpips_in_norm,
+        "lpips_outside_norm":   lpips_out_norm,
+        "lpips_localization":   lpips_loc_norm,
         "clip_delta_in":      delta_in,
         "clip_delta_out":     delta_out,
         "clip_localization":  clip_loc,
@@ -185,7 +193,7 @@ def compute_metrics(
 # ---------------------------------------------------------------------------
 
 METRIC_KEYS = [
-    "lpips_inside", "lpips_outside",
+    "lpips_inside", "lpips_outside", "lpips_loc_raw",
     "lpips_inside_norm", "lpips_outside_norm", "lpips_localization",
     "clip_localization",
 ]
@@ -242,8 +250,8 @@ def main() -> None:
 
             all_rows.append(row)
             print(f"  [ok]   {run_dir.name}  s{idx}  "
-                  f"lpips_in={row['lpips_inside']:.4f}  lpips_in_norm={row['lpips_inside_norm']:.4f}  "
-                  f"lpips_out={row['lpips_outside']:.4f}  lpips_out_norm={row['lpips_outside_norm']:.4f}  "
+                  f"lpips_loc_raw={row['lpips_loc_raw']:.3f}  "
+                  f"lpips_loc_norm={row['lpips_localization']:.3f}  "
                   f"clip_loc={row['clip_localization']:.4f}")
 
     if not all_rows:

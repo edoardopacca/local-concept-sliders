@@ -109,29 +109,26 @@ curl -L -o ~/sam_checkpoints/sam_vit_h_4b8939.pth \
     https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ```
 
-Poi decomprimi la cartella che ti mando (`base_images_for_sam.zip`) e mettila dentro alla cartella `mask_SAM/` della repo, accanto a `checkpoints/` e `segment_with_sam.py`.
-
 #### 2. Segmentazione
 
-Lancia questo script dal terminale. Per ogni immagine si apre una finestra: clicca sul soggetto giusto e chiudi. La maschera viene salvata automaticamente.
+Usa lo script `choose_masks.py` che carica SAM **una volta sola** e per ogni immagine ti mostra due opzioni di maschera in Preview, poi chiedi quale preferisci nel terminale.
 
 ```bash
-cd mask_SAM
-
-for img in base_images_for_sam/*.png; do
-    run_id=$(basename "$img" .png)
-    mkdir -p "masks_output/$run_id"
-    cp "$img" "masks_output/$run_id/base.png"
-    python segment_with_sam.py \
-        --run_dir       "masks_output/$run_id" \
-        --sam_checkpoint checkpoints/sam_vit_h_4b8939.pth \
-        --mode          interactive \
-        --image_name    base.png \
-        --output_name   mask_target.png
-done
+# dalla root della repo
+python mask_SAM/choose_masks.py \
+    --sam_checkpoint ~/sam_checkpoints/sam_vit_h_4b8939.pth \
+    --runs_root flux/tasks/masked_lora/runs \
+    --run_ids $(ls flux/tasks/masked_lora/runs/ | grep "^eval_")
 ```
 
-**Cosa cliccare per ogni concept** (il nome del concept è nel nome del file immagine):
+Per ogni run:
+1. Si apre una finestra → clicca sul target, chiudi
+2. Si apre un'altra finestra → clicca in un punto diverso, chiudi
+3. Preview mostra le due maschere sovrapposte all'immagine
+4. Digita `1`, `2` oppure `r` per ripetere i click
+5. La maschera scelta viene salvata come `mask_target.png` direttamente nella run dir
+
+**Cosa cliccare per ogni concept** (il nome del concept è nel nome del run dir):
 
 | Concept | Cosa cliccare |
 |---------|---------------|
@@ -142,42 +139,13 @@ done
 | `eval_daynight_*` | regione del **cielo** |
 | `eval_painterly_*` | regione del **cielo** (tutte le immagini hanno cielo visibile) |
 
-Se il click non ti convince (maschera brutta), premi Ctrl+C e rilancia solo quella immagine con un click diverso.
-
-#### 3. Output
-
-Quando hai finito, comprimi e mandami la cartella di output:
-
-```bash
-zip -r masks_output.zip masks_output/
-```
-
 ---
 
 ### Dopo aver ricevuto le maschere
 
-1. Decomprimi `masks_output.zip` **nella root della repo** (stessa cartella dove c'è `mask_SAM/`, `flux/`, ecc.). Dopo la decompressione devi avere:
-   ```
-   local-concept-sliders/
-     masks_output/
-       eval_age_person_01/
-         mask_target.png
-       eval_age_person_02/
-         mask_target.png
-       ...
-   ```
+Le maschere sono già nelle run dir (salvate direttamente da `choose_masks.py`).
 
-2. Lancia lo script che copia automaticamente le maschere nelle run dir corrette:
-   ```bash
-   # Flux (default)
-   python mask_SAM/place_masks.py
-
-   # Verifica prima senza copiare (consigliato):
-   python mask_SAM/place_masks.py --dry_run
-   ```
-   Lo script legge `masks_output/` e copia ogni `mask_target.png` in `flux/tasks/masked_lora/runs/{run_id}/mask_target.png`. Stampa `[OK]` per ogni copia riuscita e `[SKIP]` se una run dir non esiste ancora.
-
-3. Con CyberDuck, carica di nuovo la cartella runs sovrascrivendola.
+Con CyberDuck, carica di nuovo la cartella runs sovrascrivendola.
 ---
 
 ## FASE 3 — Applica i masked LoRA (HPC)
@@ -221,11 +189,20 @@ sbatch --export=CONCEPT=smile_person \
   flux/tasks/masked_lora/jobs/new_slurm/run_eval_metrics.slurm
 ```
 
-Output in: `metrics/results/{concept}/eval_results.csv` e `eval_aggregate.json`
+Output in: `metrics/results_flux_masked/{concept}/eval_results.csv` e `eval_aggregate.json`
+
 
 Scarica i risultati con CyberDuck da:
 ```
-metrics/results/
+metrics/results_flux_masked/
+```
+
+Poi per trovare le immagini migliori da mettere nel paper:
+```bash
+python metrics/select_best_runs.py \
+    --results_dir metrics/results_flux_masked \
+    --runs_root   flux/tasks/masked_lora/runs \
+    --top_k       3
 ```
 
 ---
