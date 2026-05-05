@@ -56,9 +56,16 @@ hf_cache/
 
 # --- Job personali (non condividere) ---
 sdxl/tasks/masked_lora/jobs/personal/
+sdxl/tasks/selectivity/jobs/personal/
 
 # --- Cartella maschere SAM locali (distribuite nelle run dir via place_masks.py) ---
 masks_output/
+
+# --- Contenuto delle run dir (immagini PNG grandi — trasferire con CyberDuck) ---
+# Le dir runs/ esistono con .gitkeep, ma le eval_* subdirectory sono generate su HPC.
+sdxl/tasks/masked_lora/runs/eval_*/
+sdxl/tasks/selectivity/runs/eval_*/
+flux/tasks/masked_lora/runs/eval_*/
 
 # --- File temporanei ---
 *.bak
