@@ -189,11 +189,13 @@ def main() -> None:
     add_text_embeds = add_text_embeds.to(device)
     add_time_ids = add_time_ids.to(device)
 
-    pipe.scheduler.set_timesteps(steps, device=device)
-    timesteps = pipe.scheduler.timesteps
     extra_step_kwargs = pipe.prepare_extra_step_kwargs(generator=None, eta=0.0)
 
     for scale in args.slider_scales:
+        # Reset scheduler state (step_index) for each scale to avoid out-of-bounds
+        pipe.scheduler.set_timesteps(steps, device=device)
+        timesteps = pipe.scheduler.timesteps
+
         print(f"\n  [scale={scale}]  {args.run_dir.name}")
         # Ricrea i latent iniziali dallo stesso seed (same as 03_masked_edit.py)
         generator = torch.Generator(device=device_obj).manual_seed(int(metadata["seed"]))
