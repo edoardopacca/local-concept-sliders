@@ -43,7 +43,6 @@ mkdir -p flux/tasks/masked_lora/logs flux/tasks/masked_lora/_peft_cache
 RUN_ID="two_subjects_masked_20260424_1910"
 SLIDER_PATH="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 SCALES=(-2 -1 0 1 2)
-EDIT_START_STEP=8
 
 echo "=============================================="
 echo "=== masked_lora Flux: Phase 3 (smile)      ==="
@@ -57,7 +56,6 @@ python -u flux/tasks/masked_lora/scripts/03_masked_edit.py \
     --run_dir "flux/tasks/masked_lora/outputs/$RUN_ID" \
     --slider_path "$SLIDER_PATH" \
     --slider_scales "${SCALES[@]}" \
-    --edit_start_step "$EDIT_START_STEP" \
     --lora_fill_rank 16 \
     --cache_dir flux/tasks/masked_lora/_peft_cache \
     --device cuda \

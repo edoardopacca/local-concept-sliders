@@ -132,11 +132,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--edit_start_step",
         type=int,
-        default=0,
+        default=8,
         help=(
             "Step dal quale attivare il multi-path con LoRA. "
             "Se >0, i primi N step girano single-forward senza LoRA. "
-            "0 = LoRA attivo da subito (default)."
+            "Default 8: uniformato a shop_concept e baseline globale per "
+            "confronti fair (22/30 step utili). 0 = LoRA attivo da subito."
         ),
     )
     parser.add_argument(

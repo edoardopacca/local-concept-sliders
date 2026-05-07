@@ -57,7 +57,6 @@ PROMPT="a natural landscape with mountains, trees, a meadow and a blue sky"
 OUT_DIR="shop_concept/outputs/test_vangogh_sky"
 SEED=42
 STEPS=30
-EDIT_START=8
 HEIGHT=512
 WIDTH=512
 GUIDANCE=3.5
@@ -73,7 +72,7 @@ echo "=============================================="
 echo "prompt : $PROMPT"
 echo "targets: ${TARGETS[*]}"
 echo "scales : ${SCALES[*]}"
-echo "steps  : $STEPS   edit_start: $EDIT_START"
+echo "steps  : $STEPS"
 echo ""
 
 python -u -m flux.tasks.shop_concept.scripts.generate \
@@ -85,7 +84,6 @@ python -u -m flux.tasks.shop_concept.scripts.generate \
     --height "$HEIGHT" --width "$WIDTH" \
     --num_inference_steps "$STEPS" \
     --guidance_scale "$GUIDANCE" \
-    --edit_start_step "$EDIT_START" \
     --seed "$SEED" \
     --cache_dir flux/tasks/shop_concept/_peft_cache
 

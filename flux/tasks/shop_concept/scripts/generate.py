@@ -5,20 +5,30 @@ Entrypoint CLI per generare immagini con Flux applicando uno o piu' Concept
 Sliders alla maniera di LoRAShop (mask estratte dall'attenzione del block
 19, blending per-token).
 
-Mapping slider <-> target:
-  --slider_paths A.pt B.pt C.pt
-  --target_prompt "man" "woman" "sky"
-  --lora_scales 1.0 1.5 0.5
-  --prompt "a photo of a man and a woman under the sky"
+Due modalita' d'uso:
 
-Ogni slider e' applicato alla regione estratta dal target_prompt
-corrispondente (per posizione nella lista). Il lora_scale e' il valore
-continuo del Concept Slider (0.0 = slider off, 1.0 = strength training,
->1.0 = extrapolation).
+(1) 1 slider per target (retro-compat, mapping implicito 1:1):
+    --slider_paths   smile.pt vangogh.pt
+    --target_prompt  man      sky
+    --lora_scales    1.0      0.8
+    --prompt "a photo of a man under the sky"
+
+(2) Multi slider per target (composizione paper-style, somma additiva
+    delle delta nella stessa regione mascherata):
+    --slider_paths     smile.pt age.pt smile.pt age.pt
+    --target_prompt    man      woman
+    --slider_to_target 0 0 1 1
+    --lora_scales      1 1 -1 -1
+    --prompt "a man and a woman"
+    -> uomo: smile+age positivi compositi; donna: smile+age negativi.
+
+In entrambe le modalita' ogni --lora_scales e' il valore continuo del
+Concept Slider per il singolo slider (0.0=off, 1.0=full training strength,
+>1.0=extrapolation), indicizzato per posizione in --slider_paths.
 
 Gli slider in formato nativo (.pt, LoRANetwork kohya) vengono convertiti
-on-the-fly a safetensors PEFT in una cache temporanea. Se vuoi
-pre-convertirli una volta per sempre, usa convert_slider_to_peft.py.
+on-the-fly a safetensors PEFT in una cache temporanea. Per pre-convertirli
+una volta per sempre, usa convert_slider_to_peft.py.
 """
 
 from __future__ import annotations
@@ -175,7 +185,8 @@ def main():
         type=float,
         nargs="+",
         default=None,
-        help="Scale continua per ogni slider (es. 1.0 1.5 0.5). "
+        help="Una scale continua per ogni --slider_paths (stessa lunghezza). "
+             "0.0 = slider off, 1.0 = strength training, >1.0 = extrapolation. "
              "Se omesso, default 1.0 per tutti.",
     )
     parser.add_argument(
@@ -197,10 +208,12 @@ def main():
         type=str,
         nargs="+",
         required=True,
-        help="Target prompt per ogni regione (sottostringa esatta di --prompt). "
-             "Default (1:1): un target per slider, posizionalmente. "
-             "Con --slider_to_target: un target per REGIONE mascherata, "
-             "puo' essere meno dei target_prompt rispetto agli slider.",
+        help="Una sottostringa esatta di --prompt per ogni regione mascherata. "
+             "Senza --slider_to_target: deve avere la stessa lunghezza di "
+             "--slider_paths (mapping 1:1 implicito). "
+             "Con --slider_to_target: lunghezza pari al numero di REGIONI "
+             "(puo' essere minore degli slider, perche' piu' slider possono "
+             "puntare alla stessa regione).",
     )
     parser.add_argument(
         "--slider_to_target",

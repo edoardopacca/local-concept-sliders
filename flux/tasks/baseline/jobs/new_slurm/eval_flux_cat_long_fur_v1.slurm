@@ -49,7 +49,6 @@ python -u flux/tasks/baseline/scripts/generate_flux_slider.py \
   --alpha 1.0 \
   --train_method xattn \
   --cuda_device 0
-  --skip_slider_timestep_till 10
 
 echo ""
 echo "=== DONE ==="

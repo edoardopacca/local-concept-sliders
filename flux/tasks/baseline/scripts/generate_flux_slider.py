@@ -59,6 +59,12 @@ def parse_args():
     p.add_argument("--train_method", default="xattn",
                    choices=["xattn", "noxattn", "full"])
     p.add_argument("--cuda_device", default="0")
+    p.add_argument("--skip_slider_timestep_till", type=int, default=8,
+                   help="Step soglia per attivare lo slider durante il "
+                        "denoising. LoRA off per i <= soglia, on per i > soglia. "
+                        "Default 8 (uniformato a edit_start_step di "
+                        "shop_concept e masked_lora per confronti fair). "
+                        "Setting paper Concept Sliders: 0 (LoRA dal step 1).")
     return p.parse_args()
 
 
@@ -121,6 +127,8 @@ for i, pp in enumerate(args.prompt):
 print(f"[config] seeds        = {args.seeds}")
 print(f"[config] resolution   = {args.width}x{args.height}")
 print(f"[config] steps/cfg    = {args.steps} / {args.guidance_scale}")
+print(f"[config] skip_slider  = {args.skip_slider_timestep_till} "
+      f"(LoRA on per i > {args.skip_slider_timestep_till})")
 n_total = len(lora_paths) * len(args.lora_scales) * len(args.prompt) * len(args.seeds)
 print(f"[config] total images = {n_total}")
 print()
@@ -218,7 +226,7 @@ for ci, lora_path in enumerate(lora_paths):
                     max_sequence_length=args.max_sequence_length,
                     generator=gen,
                     network=use_network,
-                    skip_slider_timestep_till=0,
+                    skip_slider_timestep_till=args.skip_slider_timestep_till,
                 ).images[0]
                 img.save(out_path)
                 dt = time.time() - t_g

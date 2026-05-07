@@ -48,7 +48,6 @@ SEEDS=(42 123)
 SCALES=(0.0 0.3 0.7 1.0)
 
 STEPS=30
-EDIT_START=8
 HEIGHT=512
 WIDTH=512
 GUIDANCE=3.5
@@ -62,7 +61,7 @@ echo "prompt : $PROMPT"
 echo "target : $TARGET"
 echo "seeds  : ${SEEDS[*]}"
 echo "scales : ${SCALES[*]}"
-echo "steps  : $STEPS   edit_start: $EDIT_START"
+echo "steps  : $STEPS"
 echo "total  : $((${#SEEDS[@]} * ${#SCALES[@]})) immagini"
 echo ""
 
@@ -88,7 +87,6 @@ for SEED in "${SEEDS[@]}"; do
             --height "$HEIGHT" --width "$WIDTH" \
             --num_inference_steps "$STEPS" \
             --guidance_scale "$GUIDANCE" \
-            --edit_start_step "$EDIT_START" \
             --seed "$SEED" \
             --cache_dir flux/tasks/shop_concept/_peft_cache
     done

@@ -52,13 +52,11 @@ RUN_ID="vangogh_sky_seed42"
 SLIDER_PATH="flux/trained_sliders/training/outputs/vangogh_flux_v1_rank16_xattn_alpha1/flux-vangogh_flux_v1/slider_0.pt"
 # Sweep di scale: 1 load Flux + 6 denoising cycles
 SCALES=(0 1 2 3 4 5)
-EDIT_START_STEP=8
 
 python -u flux/tasks/masked_lora/03_masked_edit.py \
     --run_dir "flux/tasks/masked_lora/runs/$RUN_ID" \
     --slider_path "$SLIDER_PATH" \
     --slider_scales "${SCALES[@]}" \
-    --edit_start_step "$EDIT_START_STEP" \
     --lora_fill_rank 16 \
     --cache_dir flux/tasks/masked_lora/_peft_cache \
     --device cuda \

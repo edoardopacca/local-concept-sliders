@@ -75,14 +75,6 @@ SLIDER_TO_MASK=(0 0 1 1)
 # Scale (smile_man, age_man, smile_woman, age_woman)
 SLIDER_SCALES=(1.5 1.5 -1.5 -1.5)
 
-EDIT_START_STEP=8   # ~equivalente a "starting noise 700" del paper SDXL: i
-                    # primi 8 step su 30 girano vanilla single-forward (no LoRA,
-                    # no blend) per stabilizzare il layout della scena dalla
-                    # base. Poi parte il multi-path edit. Senza questo, il
-                    # blend di velocity globalmente divergenti dal step 0
-                    # spinge la composizione fuori dalla scena base
-                    # (osservato: posizioni/identita' dei soggetti cambiano).
-
 echo "================================================="
 echo "=== masked_lora Flux: Phase 3 multi-compose   ==="
 echo "================================================="
@@ -91,7 +83,6 @@ echo "masks             : ${MASK_NAMES[*]}"
 echo "slider paths      : ${SLIDER_PATHS[*]}"
 echo "slider->mask      : ${SLIDER_TO_MASK[*]}"
 echo "slider scales     : ${SLIDER_SCALES[*]}"
-echo "edit_start_step   : $EDIT_START_STEP"
 echo ""
 
 python -u flux/tasks/masked_lora/scripts/03_masked_edit.py \
@@ -100,7 +91,6 @@ python -u flux/tasks/masked_lora/scripts/03_masked_edit.py \
     --mask_names "${MASK_NAMES[@]}" \
     --slider_to_mask "${SLIDER_TO_MASK[@]}" \
     --slider_scales "${SLIDER_SCALES[@]}" \
-    --edit_start_step "$EDIT_START_STEP" \
     --lora_fill_rank 16 \
     --cache_dir flux/tasks/masked_lora/_peft_cache \
     --device cuda \

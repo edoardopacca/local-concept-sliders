@@ -53,7 +53,6 @@ mkdir -p "$OUT_DIR"
 
 # HQ params
 STEPS=50
-EDIT_START=8
 HEIGHT=1024
 WIDTH=1024
 GUIDANCE=3.5
@@ -86,7 +85,6 @@ run_one() {
         --height "$HEIGHT" --width "$WIDTH" \
         --num_inference_steps "$STEPS" \
         --guidance_scale "$GUIDANCE" \
-        --edit_start_step "$EDIT_START" \
         --seed "$SEED" \
         --cache_dir flux/tasks/shop_concept/_peft_cache
 }

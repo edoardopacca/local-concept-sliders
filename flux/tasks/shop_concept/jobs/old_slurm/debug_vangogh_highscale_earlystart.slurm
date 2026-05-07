@@ -63,7 +63,6 @@ python -u -m flux.tasks.shop_concept.scripts.sweep \
     --height 512 --width 512 \
     --num_inference_steps 30 \
     --guidance_scale 3.5 \
-    --edit_start_step 5 \
     --cache_dir "shop_concept/_peft_cache"
 
 echo ""
