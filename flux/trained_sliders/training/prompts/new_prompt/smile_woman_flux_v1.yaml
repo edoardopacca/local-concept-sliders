@@ -1,0 +1,113 @@
+# Smile slider — Flux v1 — women only
+# Same prompts as smile_woman_sdxl_v1.yaml.
+# Female (10): smile direction. Male (5): zero direction.
+# Total: 15 entries.
+
+# ── FEMALE: smile direction ───────────────────────────────────────────────────
+
+- target: female white person
+  positive: female white person, smiling, happy face, big smile
+  unconditional: female white person, frowning, grumpy, sad
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female white person
+  positive: female white person, smiling, cheerful, joyful
+  unconditional: female white person, serious, neutral expression
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person, smiling, happy face, big smile
+  unconditional: female black person, frowning, grumpy, sad
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person, smiling, cheerful, joyful
+  unconditional: female black person, serious, neutral expression
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person, smiling, happy face, big smile
+  unconditional: female indian person, frowning, grumpy, sad
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person, smiling, cheerful, joyful
+  unconditional: female indian person, serious, neutral expression
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person, smiling, happy face, big smile
+  unconditional: female asian person, frowning, grumpy, sad
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person, smiling, cheerful, joyful
+  unconditional: female asian person, serious, neutral expression
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person, smiling, happy face, big smile
+  unconditional: female hispanic person, frowning, grumpy, sad
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person, smiling, cheerful, joyful
+  unconditional: female hispanic person, serious, neutral expression
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+
+# ── MALE: zero direction (positive = unconditional = neutral) ─────────────────
+
+- target: male white person
+  positive: male white person
+  unconditional: male white person
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+
+- target: male black person
+  positive: male black person
+  unconditional: male black person
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+
+- target: male indian person
+  positive: male indian person
+  unconditional: male indian person
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male asian person
+  positive: male asian person
+  unconditional: male asian person
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male hispanic person
+  positive: male hispanic person
+  unconditional: male hispanic person
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance

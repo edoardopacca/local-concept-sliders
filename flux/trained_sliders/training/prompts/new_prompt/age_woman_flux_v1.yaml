@@ -1,0 +1,113 @@
+# Age slider — Flux v1 — women only
+# Same prompts as age_woman_sdxl_v1.yaml.
+# Female (10): age direction. Male (5): zero direction (positive=unconditional=neutral).
+# Total: 15 entries.
+
+# ── FEMALE: age direction ─────────────────────────────────────────────────────
+
+- target: female white person
+  positive: female white person, very old, wrinkly, gray hair, aged skin
+  unconditional: female white person, very young, smooth skin, youthful
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female white person
+  positive: female white person, elderly, wrinkled face, white hair
+  unconditional: female white person, young, fresh face, no wrinkles
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person, very old, wrinkly, gray hair, aged skin
+  unconditional: female black person, very young, smooth skin, youthful
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person, elderly, wrinkled face, white hair
+  unconditional: female black person, young, fresh face, no wrinkles
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female indian person, very young, smooth skin, youthful
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person, elderly, wrinkled face, white hair
+  unconditional: female indian person, young, fresh face, no wrinkles
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person, very old, wrinkly, gray hair, aged skin
+  unconditional: female asian person, very young, smooth skin, youthful
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person, elderly, wrinkled face, white hair
+  unconditional: female asian person, young, fresh face, no wrinkles
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person, very old, wrinkly, gray hair, aged skin
+  unconditional: female hispanic person, very young, smooth skin, youthful
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person, elderly, wrinkled face, white hair
+  unconditional: female hispanic person, young, fresh face, no wrinkles
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
+
+# ── MALE: zero direction (positive = unconditional = neutral) ─────────────────
+
+- target: male white person
+  positive: male white person
+  unconditional: male white person
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+
+- target: male black person
+  positive: male black person
+  unconditional: male black person
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+
+- target: male indian person
+  positive: male indian person
+  unconditional: male indian person
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male asian person
+  positive: male asian person
+  unconditional: male asian person
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male hispanic person
+  positive: male hispanic person
+  unconditional: male hispanic person
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance

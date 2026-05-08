@@ -1,0 +1,73 @@
+# Curly hair slider — Flux v1 — all persons
+# Same prompts as curlyhair_person_sdxl_v1.yaml.
+# 10 entries: 5 ethnicities x 2 genders.
+
+- target: male white person
+  positive: male white person, curly hair, wavy hair, tight curls
+  unconditional: male white person, straight hair, smooth hair, sleek
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+
+- target: male black person
+  positive: male black person, curly hair, wavy hair, tight curls
+  unconditional: male black person, straight hair, smooth hair, sleek
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+
+- target: male indian person
+  positive: male indian person, curly hair, wavy hair, tight curls
+  unconditional: male indian person, straight hair, smooth hair, sleek
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male asian person
+  positive: male asian person, curly hair, wavy hair, tight curls
+  unconditional: male asian person, straight hair, smooth hair, sleek
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male hispanic person
+  positive: male hispanic person, curly hair, wavy hair, tight curls
+  unconditional: male hispanic person, straight hair, smooth hair, sleek
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+
+- target: female white person
+  positive: female white person, curly hair, wavy hair, tight curls
+  unconditional: female white person, straight hair, smooth hair, sleek
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person, curly hair, wavy hair, tight curls
+  unconditional: female black person, straight hair, smooth hair, sleek
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person, curly hair, wavy hair, tight curls
+  unconditional: female indian person, straight hair, smooth hair, sleek
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person, curly hair, wavy hair, tight curls
+  unconditional: female asian person, straight hair, smooth hair, sleek
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person, curly hair, wavy hair, tight curls
+  unconditional: female hispanic person, straight hair, smooth hair, sleek
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance

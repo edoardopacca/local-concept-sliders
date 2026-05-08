@@ -1,0 +1,113 @@
+# Fur length slider — Flux v1 — dogs only
+# Same prompts as furlength_dog_sdxl_v1.yaml.
+# Dog (10): fur direction. Cat (5): zero direction.
+# Total: 15 entries.
+
+# ── DOG: fur length direction ─────────────────────────────────────────────────
+
+- target: a dog
+  positive: a dog, long fur, fluffy coat, long-haired
+  unconditional: a dog, short fur, shorthaired, smooth coat
+  neutral: a dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a dog
+  positive: a dog, very long fur, extremely fluffy coat, long-haired
+  unconditional: a dog, very short fur, trimmed coat, shorthaired
+  neutral: a dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a golden retriever
+  positive: a golden retriever, very long fur, extremely fluffy coat, long-haired
+  unconditional: a golden retriever, short fur, trimmed coat, shorthaired
+  neutral: a golden retriever
+  guidance_scale: 4
+  action: enhance
+
+- target: a golden retriever
+  positive: a golden retriever, long flowing fur, fluffy, long-haired
+  unconditional: a golden retriever, short smooth fur, shorthaired
+  neutral: a golden retriever
+  guidance_scale: 4
+  action: enhance
+
+- target: a labrador dog
+  positive: a labrador dog, long fur, fluffy coat, long-haired
+  unconditional: a labrador dog, very short fur, smooth coat, shorthaired
+  neutral: a labrador dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a labrador dog
+  positive: a labrador dog, very long fur, fluffy thick coat, long-haired
+  unconditional: a labrador dog, short smooth fur, shorthaired
+  neutral: a labrador dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a poodle dog
+  positive: a poodle dog, long fur, very fluffy coat, long-haired
+  unconditional: a poodle dog, short fur, trimmed coat, shorthaired
+  neutral: a poodle dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a poodle dog
+  positive: a poodle dog, extremely long fluffy fur, long-haired, voluminous
+  unconditional: a poodle dog, very short trimmed fur, shorthaired
+  neutral: a poodle dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a husky dog
+  positive: a husky dog, very long fur, extremely fluffy thick coat, long-haired
+  unconditional: a husky dog, short fur, trimmed coat, shorthaired
+  neutral: a husky dog
+  guidance_scale: 4
+  action: enhance
+
+- target: a husky dog
+  positive: a husky dog, long flowing fur, fluffy dense coat, long-haired
+  unconditional: a husky dog, short smooth fur, shorthaired
+  neutral: a husky dog
+  guidance_scale: 4
+  action: enhance
+
+# ── CAT: zero direction (positive = unconditional = neutral) ──────────────────
+
+- target: a cat
+  positive: a cat
+  unconditional: a cat
+  neutral: a cat
+  guidance_scale: 4
+  action: enhance
+
+- target: a persian cat
+  positive: a persian cat
+  unconditional: a persian cat
+  neutral: a persian cat
+  guidance_scale: 4
+  action: enhance
+
+- target: a siamese cat
+  positive: a siamese cat
+  unconditional: a siamese cat
+  neutral: a siamese cat
+  guidance_scale: 4
+  action: enhance
+
+- target: a domestic cat
+  positive: a domestic cat
+  unconditional: a domestic cat
+  neutral: a domestic cat
+  guidance_scale: 4
+  action: enhance
+
+- target: a maine coon cat
+  positive: a maine coon cat
+  unconditional: a maine coon cat
+  neutral: a maine coon cat
+  guidance_scale: 4
+  action: enhance

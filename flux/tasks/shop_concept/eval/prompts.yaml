@@ -1,0 +1,195 @@
+# prompts.yaml — LoRAShop localization eval
+# =============================================================================
+# 4 concepts × 20 prompts = 80 eval runs.
+#
+# Vincoli per ogni concept:
+#   - 2 o 3 soggetti per immagine
+#   - almeno 1 maschio + 1 femmina (concepts people)
+#   - almeno 1 cane + 1 gatto (concept furlength_dog)
+#   - target_prompt deve essere sottostringa ESATTA del prompt principale
+#
+# Regola "man vs woman": per target="man", "man" deve apparire PRIMA di
+# "woman" nel testo (evita che prompt.index("man") trovi "man" dentro "woman").
+#
+# Seeds:
+#   smile_woman    : 100–119
+#   curlyhair_man  : 200–219
+#   age_woman      : 300–319
+#   furlength_dog  : 400–419
+# =============================================================================
+
+smile_woman:
+  target_prompt: "woman"
+  prompts:
+    - seed: 100
+      text: "a man and a woman sitting at a cafe table, portrait photo"
+    - seed: 101
+      text: "a man and a woman walking in a park, outdoor portrait"
+    - seed: 102
+      text: "a man and a woman at a birthday party, candid photo"
+    - seed: 103
+      text: "two men and a woman at a business meeting, portrait"
+    - seed: 104
+      text: "a man and a woman cooking together in a kitchen, photo"
+    - seed: 105
+      text: "a man and a woman reading books in a library, portrait"
+    - seed: 106
+      text: "a man and a woman on a beach at sunset, outdoor photo"
+    - seed: 107
+      text: "a man and a woman at a wedding reception, portrait photo"
+    - seed: 108
+      text: "a man and a woman hiking on a mountain trail, outdoor portrait"
+    - seed: 109
+      text: "a man and a woman having coffee at a window, portrait"
+    - seed: 110
+      text: "a man and a woman watching a film together, candid photo"
+    - seed: 111
+      text: "two men and a woman at a restaurant table, portrait photo"
+    - seed: 112
+      text: "a man and a woman playing chess in a park, photo"
+    - seed: 113
+      text: "a man and a woman in a flower garden, outdoor portrait"
+    - seed: 114
+      text: "a man and a woman at an art gallery, portrait photo"
+    - seed: 115
+      text: "a man and a woman at a rooftop party, candid photo"
+    - seed: 116
+      text: "a man and a woman at a farmers market, outdoor photo"
+    - seed: 117
+      text: "two men and a woman at a picnic in the park, outdoor portrait"
+    - seed: 118
+      text: "a man and a woman dancing at a party, candid portrait"
+    - seed: 119
+      text: "a man and a woman sitting on a park bench, portrait"
+
+curlyhair_man:
+  target_prompt: "man"
+  prompts:
+    - seed: 200
+      text: "a man and a woman sitting at a cafe table, portrait photo"
+    - seed: 201
+      text: "a man and a woman walking in a park, outdoor portrait"
+    - seed: 202
+      text: "a man and a woman at a birthday party, candid photo"
+    - seed: 203
+      text: "a man and two women at a business meeting, portrait"
+    - seed: 204
+      text: "a man and a woman cooking together in a kitchen, photo"
+    - seed: 205
+      text: "a man and a woman reading books in a library, portrait"
+    - seed: 206
+      text: "a man and a woman on a beach at sunset, outdoor photo"
+    - seed: 207
+      text: "a man and a woman at a wedding reception, portrait photo"
+    - seed: 208
+      text: "a man and a woman hiking on a mountain trail, outdoor portrait"
+    - seed: 209
+      text: "a man and a woman having coffee at a window, portrait"
+    - seed: 210
+      text: "a man and a woman watching a film together, candid photo"
+    - seed: 211
+      text: "a man and two women at a restaurant table, portrait photo"
+    - seed: 212
+      text: "a man and a woman playing chess in a park, photo"
+    - seed: 213
+      text: "a man and a woman in a flower garden, outdoor portrait"
+    - seed: 214
+      text: "a man and a woman at an art gallery, portrait photo"
+    - seed: 215
+      text: "a man and a woman at a rooftop party, candid photo"
+    - seed: 216
+      text: "a man and a woman at a farmers market, outdoor photo"
+    - seed: 217
+      text: "a man and two women at a picnic in the park, outdoor portrait"
+    - seed: 218
+      text: "a man and a woman dancing at a party, candid portrait"
+    - seed: 219
+      text: "a man and a woman sitting on a park bench, portrait"
+
+age_woman:
+  target_prompt: "woman"
+  prompts:
+    - seed: 300
+      text: "a man and a woman at a dinner table, portrait photo"
+    - seed: 301
+      text: "a man and a woman in a coffee shop, indoor portrait"
+    - seed: 302
+      text: "a man and a woman at a family reunion, candid photo"
+    - seed: 303
+      text: "two men and a woman in a conference room, portrait"
+    - seed: 304
+      text: "a man and a woman at a farmers market, outdoor photo"
+    - seed: 305
+      text: "a man and a woman reading on a terrace, portrait"
+    - seed: 306
+      text: "a man and a woman at a summer festival, outdoor photo"
+    - seed: 307
+      text: "a man and a woman at a holiday dinner, portrait photo"
+    - seed: 308
+      text: "a man and a woman by a swimming pool, outdoor portrait"
+    - seed: 309
+      text: "a man and a woman at a book signing event, candid photo"
+    - seed: 310
+      text: "two men and a woman at a gallery opening, portrait photo"
+    - seed: 311
+      text: "a man and a woman at a train station, candid photo"
+    - seed: 312
+      text: "a man and a woman in a botanical garden, outdoor portrait"
+    - seed: 313
+      text: "a man and a woman at a cinema entrance, portrait photo"
+    - seed: 314
+      text: "a man and a woman at a street market, outdoor photo"
+    - seed: 315
+      text: "a man and a woman at an outdoor concert, candid portrait"
+    - seed: 316
+      text: "two men and a woman on a rooftop terrace, outdoor photo"
+    - seed: 317
+      text: "a man and a woman at a yoga class, candid photo"
+    - seed: 318
+      text: "a man and a woman at a neighborhood festival, outdoor portrait"
+    - seed: 319
+      text: "a man and a woman by a lakeside, outdoor portrait"
+
+furlength_dog:
+  target_prompt: "dog"
+  prompts:
+    - seed: 400
+      text: "a dog and a cat sitting on a sofa, pet portrait"
+    - seed: 401
+      text: "a dog and a cat playing in a garden, outdoor photo"
+    - seed: 402
+      text: "a dog and a cat resting on a blanket, cozy photo"
+    - seed: 403
+      text: "two dogs and a cat on a porch, portrait photo"
+    - seed: 404
+      text: "a dog and a cat looking out a window, indoor photo"
+    - seed: 405
+      text: "a dog and a cat by their food bowls, indoor photo"
+    - seed: 406
+      text: "a dog and a cat napping together on a bed, cozy portrait"
+    - seed: 407
+      text: "a dog and a cat by a fireplace, indoor portrait"
+    - seed: 408
+      text: "a dog and a cat in a field of flowers, outdoor photo"
+    - seed: 409
+      text: "a dog and a cat at the beach, outdoor photo"
+    - seed: 410
+      text: "a dog and a cat on a wooden deck, outdoor photo"
+    - seed: 411
+      text: "two dogs and a cat in a garden, outdoor portrait"
+    - seed: 412
+      text: "a dog and a cat underneath a tree, outdoor photo"
+    - seed: 413
+      text: "a dog and a cat sitting by a lake, portrait photo"
+    - seed: 414
+      text: "a dog and a cat on autumn leaves, outdoor photo"
+    - seed: 415
+      text: "a dog and a cat in a cozy living room, indoor photo"
+    - seed: 416
+      text: "a dog and a cat in the snow, outdoor portrait"
+    - seed: 417
+      text: "two dogs and a cat resting together on grass, pet portrait"
+    - seed: 418
+      text: "a dog and a cat by a garden pond, outdoor photo"
+    - seed: 419
+      text: "a dog and a cat on a sunny terrace, outdoor photo"

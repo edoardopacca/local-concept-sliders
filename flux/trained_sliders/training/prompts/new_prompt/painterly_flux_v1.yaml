@@ -1,0 +1,73 @@
+# Realistic-to-painterly slider — Flux v1 — general scenes
+# Same prompts as painterly_sdxl_v1.yaml.
+# 10 entries across diverse scene types.
+
+- target: a photo of a landscape
+  positive: a painting of a landscape, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a landscape, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a landscape
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a city street
+  positive: a painting of a city street, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a city street, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a city street
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a mountain scene
+  positive: a painting of a mountain scene, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a mountain scene, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a mountain scene
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a forest
+  positive: a painting of a forest, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a forest, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a forest
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a beach
+  positive: a painting of a beach, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a beach, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a beach
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a village
+  positive: a painting of a village, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a village, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a village
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a portrait
+  positive: a painting of a portrait, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a portrait, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a portrait
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a river
+  positive: a painting of a river, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a river, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a river
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a countryside
+  positive: a painting of a countryside, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a countryside, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a countryside
+  guidance_scale: 4
+  action: enhance
+
+- target: a photo of a park
+  positive: a painting of a park, painterly, artistic brushstrokes, oil painting, impressionist
+  unconditional: a hyperrealistic photograph of a park, photorealistic, sharp, 4k, DSLR
+  neutral: a photo of a park
+  guidance_scale: 4
+  action: enhance

@@ -1,0 +1,113 @@
+# Curly hair slider — Flux v1 — men only
+# Same prompts as curlyhair_man_sdxl_v1.yaml.
+# Male (10): curly direction. Female (5): zero direction.
+# Total: 15 entries.
+
+# ── MALE: curly direction ─────────────────────────────────────────────────────
+
+- target: male white person
+  positive: male white person, curly hair, wavy hair, tight curls
+  unconditional: male white person, straight hair, smooth hair, sleek
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+
+- target: male white person
+  positive: male white person, curly hair, bouncy curls, voluminous
+  unconditional: male white person, straight hair, flat hair, sleek
+  neutral: male white person
+  guidance_scale: 4
+  action: enhance
+
+- target: male black person
+  positive: male black person, curly hair, wavy hair, tight curls
+  unconditional: male black person, straight hair, smooth hair, sleek
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+
+- target: male black person
+  positive: male black person, curly hair, bouncy curls, voluminous
+  unconditional: male black person, straight hair, flat hair, sleek
+  neutral: male black person
+  guidance_scale: 4
+  action: enhance
+
+- target: male indian person
+  positive: male indian person, curly hair, wavy hair, tight curls
+  unconditional: male indian person, straight hair, smooth hair, sleek
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male indian person
+  positive: male indian person, curly hair, bouncy curls, voluminous
+  unconditional: male indian person, straight hair, flat hair, sleek
+  neutral: male indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male asian person
+  positive: male asian person, curly hair, wavy hair, tight curls
+  unconditional: male asian person, straight hair, smooth hair, sleek
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male asian person
+  positive: male asian person, curly hair, bouncy curls, voluminous
+  unconditional: male asian person, straight hair, flat hair, sleek
+  neutral: male asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: male hispanic person
+  positive: male hispanic person, curly hair, wavy hair, tight curls
+  unconditional: male hispanic person, straight hair, smooth hair, sleek
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+
+- target: male hispanic person
+  positive: male hispanic person, curly hair, bouncy curls, voluminous
+  unconditional: male hispanic person, straight hair, flat hair, sleek
+  neutral: male hispanic person
+  guidance_scale: 4
+  action: enhance
+
+# ── FEMALE: zero direction (positive = unconditional = neutral) ───────────────
+
+- target: female white person
+  positive: female white person
+  unconditional: female white person
+  neutral: female white person
+  guidance_scale: 4
+  action: enhance
+
+- target: female black person
+  positive: female black person
+  unconditional: female black person
+  neutral: female black person
+  guidance_scale: 4
+  action: enhance
+
+- target: female indian person
+  positive: female indian person
+  unconditional: female indian person
+  neutral: female indian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female asian person
+  positive: female asian person
+  unconditional: female asian person
+  neutral: female asian person
+  guidance_scale: 4
+  action: enhance
+
+- target: female hispanic person
+  positive: female hispanic person
+  unconditional: female hispanic person
+  neutral: female hispanic person
+  guidance_scale: 4
+  action: enhance
