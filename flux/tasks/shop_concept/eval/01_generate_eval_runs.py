@@ -86,6 +86,10 @@ def build_parser() -> argparse.ArgumentParser:
                    default="flux/tasks/shop_concept/_peft_cache",
                    help="Cache per conversioni .pt -> safetensors PEFT.")
     p.add_argument("--device", type=str, default="cuda")
+    p.add_argument("--mode", choices=["all", "base_only", "edited_only"],
+                   default="all",
+                   help="all: base+mask+edited; base_only: solo base+mask; "
+                        "edited_only: solo edited (assume base/mask esistano).")
     return p
 
 
@@ -93,8 +97,16 @@ def load_concept_prompts(concept: str):
     with open(PROMPTS_YAML, "r") as f:
         data = yaml.safe_load(f)
     assert concept in data, f"Concept '{concept}' non trovato in prompts.yaml"
-    entry = data[concept]
-    return entry["target_prompt"], entry["prompts"]
+    prompts = data[concept]["prompts"]
+    for p in prompts:
+        assert "target_prompt" in p, (
+            f"Entry seed={p.get('seed')} in concept '{concept}' manca di target_prompt"
+        )
+        assert p["target_prompt"] in p["text"], (
+            f"seed={p['seed']}: target_prompt '{p['target_prompt']}' "
+            f"non è sottostringa di '{p['text']}'"
+        )
+    return prompts
 
 
 def mask_seg_to_png_resized(mask_seg_path: Path, out_path: Path, target_size: tuple):
@@ -144,9 +156,8 @@ def main() -> None:
         print("[warn] CUDA non disponibile, uso CPU")
         device = "cpu"
 
-    target_prompt, prompts = load_concept_prompts(args.concept)
-    print(f"[eval] concept={args.concept}  target='{target_prompt}'  "
-          f"n_prompts={len(prompts)}")
+    prompts = load_concept_prompts(args.concept)
+    print(f"[eval] concept={args.concept}  n_prompts={len(prompts)}")
 
     # --- Carica RealGenerationPipeline ---
     print(f"[eval] loading Flux pipeline from {args.model_id} ...")
@@ -168,8 +179,9 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         for entry in prompts:
-            seed = entry["seed"]
+            seed        = entry["seed"]
             prompt_text = entry["text"]
+            target_prompt = entry["target_prompt"]
             run_name = f"eval_{args.concept}_{seed:04d}"
             run_dir = args.runs_root / run_name
             run_dir.mkdir(parents=True, exist_ok=True)
@@ -177,51 +189,89 @@ def main() -> None:
             base_path = run_dir / "base.png"
             mask_path = run_dir / "mask_target.png"
 
-            # Salta se già completato
-            already_done = base_path.exists() and mask_path.exists() and all(
+            base_done   = base_path.exists() and mask_path.exists()
+            edited_done = all(
                 (run_dir / f"edited_lorashop_s{s:.1f}.png").exists()
                 for s in EVAL_SCALES
             )
-            if already_done:
+
+            # Skip logic per mode
+            if args.mode == "all" and base_done and edited_done:
                 print(f"  [skip] {run_name} (già completato)")
                 continue
+            if args.mode == "base_only" and base_done:
+                print(f"  [skip] {run_name} (base già completato)")
+                continue
+            if args.mode == "edited_only":
+                if not base_done:
+                    print(f"  [warn] {run_name} — base/mask mancante, salta")
+                    continue
+                if edited_done:
+                    print(f"  [skip] {run_name} (edited già completato)")
+                    continue
 
-            print(f"\n  [{run_name}] seed={seed}  prompt='{prompt_text[:60]}...'")
+            print(f"\n  [{run_name}] seed={seed}  target='{target_prompt}'  "
+                  f"prompt='{prompt_text[:70]}...'")
 
             # --- Step 1: genera base (scale=0) + estrai maschera ---
-            mask_dump_prefix = str(Path(tmp_dir) / run_name)
-            print(f"    → base + mask ...")
-            base_img = run_generation(
-                pipe=pipe,
-                prompt=prompt_text,
-                target_prompt=target_prompt,
-                seed=seed,
-                lora_scale=0.0,
-                height=args.height,
-                width=args.width,
-                steps=args.steps,
-                guidance_scale=args.guidance_scale,
-                max_sequence_length=args.max_sequence_length,
-                edit_start_step=args.edit_start_step,
-                mask_dump_path=mask_dump_prefix,
-                device=device,
-            )
-            base_img.save(base_path)
-            print(f"    ✓ base.png")
-
-            # Ridimensiona la seg mask alla dimensione dell'immagine
-            seg_mask_low_res = Path(f"{mask_dump_prefix}_target0_seg.png")
-            if seg_mask_low_res.exists():
-                mask_seg_to_png_resized(
-                    seg_mask_low_res, mask_path, (args.width, args.height)
+            if args.mode != "edited_only" and not base_done:
+                mask_dump_prefix = str(Path(tmp_dir) / run_name)
+                print(f"    → base + mask ...")
+                base_img = run_generation(
+                    pipe=pipe,
+                    prompt=prompt_text,
+                    target_prompt=target_prompt,
+                    seed=seed,
+                    lora_scale=0.0,
+                    height=args.height,
+                    width=args.width,
+                    steps=args.steps,
+                    guidance_scale=args.guidance_scale,
+                    max_sequence_length=args.max_sequence_length,
+                    edit_start_step=args.edit_start_step,
+                    mask_dump_path=mask_dump_prefix,
+                    device=device,
                 )
-                print(f"    ✓ mask_target.png")
-            else:
-                print(f"    [warn] mask seg non trovata: {seg_mask_low_res}")
+                base_img.save(base_path)
+                print(f"    ✓ base.png")
+
+                # Ridimensiona la seg mask alla dimensione dell'immagine
+                seg_mask_low_res = Path(f"{mask_dump_prefix}_target0_seg.png")
+                if seg_mask_low_res.exists():
+                    mask_seg_to_png_resized(
+                        seg_mask_low_res, mask_path, (args.width, args.height)
+                    )
+                    print(f"    ✓ mask_target.png")
+                else:
+                    print(f"    [warn] mask seg non trovata: {seg_mask_low_res}")
+
+            # In base_only mode scrivi metadata e passa al prossimo
+            if args.mode == "base_only":
+                meta = {
+                    "run_id":          run_name,
+                    "concept":         args.concept,
+                    "target_prompt":   target_prompt,
+                    "seed":            seed,
+                    "prompt":          prompt_text,
+                    "slider_path":     str(args.slider_path),
+                    "height":          args.height,
+                    "width":           args.width,
+                    "steps":           args.steps,
+                    "guidance_scale":  args.guidance_scale,
+                    "edit_start_step": args.edit_start_step,
+                    "eval_scales":     EVAL_SCALES,
+                }
+                (run_dir / "metadata.json").write_text(
+                    json.dumps(meta, indent=2), encoding="utf-8"
+                )
+                print(f"    ✓ metadata.json")
+                continue
 
             # --- Step 2: genera immagini editate per ogni scale ---
             for scale in EVAL_SCALES:
                 out_path = run_dir / f"edited_lorashop_s{scale:.1f}.png"
+                if out_path.exists():
+                    continue
                 print(f"    → edited scale={scale:.1f} ...")
                 edited_img = run_generation(
                     pipe=pipe,
@@ -243,18 +293,18 @@ def main() -> None:
 
             # --- Metadata ---
             meta = {
-                "run_id":         run_name,
-                "concept":        args.concept,
-                "target_prompt":  target_prompt,
-                "seed":           seed,
-                "prompt":         prompt_text,
-                "slider_path":    str(args.slider_path),
-                "height":         args.height,
-                "width":          args.width,
-                "steps":          args.steps,
-                "guidance_scale": args.guidance_scale,
+                "run_id":          run_name,
+                "concept":         args.concept,
+                "target_prompt":   target_prompt,
+                "seed":            seed,
+                "prompt":          prompt_text,
+                "slider_path":     str(args.slider_path),
+                "height":          args.height,
+                "width":           args.width,
+                "steps":           args.steps,
+                "guidance_scale":  args.guidance_scale,
                 "edit_start_step": args.edit_start_step,
-                "eval_scales":    EVAL_SCALES,
+                "eval_scales":     EVAL_SCALES,
             }
             (run_dir / "metadata.json").write_text(
                 json.dumps(meta, indent=2), encoding="utf-8"
