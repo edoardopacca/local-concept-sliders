@@ -229,7 +229,7 @@ def main() -> None:
     print("  loading LPIPS (alex)...")
     lp_model = lpips_lib.LPIPS(net="alex").to(device)
     print(f"  loading CLIP ({CLIP_MODEL_ID})...")
-    cl_model = CLIPModel.from_pretrained(CLIP_MODEL_ID).to(device)
+    cl_model = CLIPModel.from_pretrained(CLIP_MODEL_ID, use_safetensors=True).to(device)
     cl_proc  = CLIPProcessor.from_pretrained(CLIP_MODEL_ID)
 
     all_rows: List[Dict] = []
