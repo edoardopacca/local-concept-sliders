@@ -5,7 +5,7 @@
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
 #SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
@@ -17,28 +17,50 @@ activate_flux_env
 
 export HF_HOME="$FERT_HF_CACHE"
 export HF_HUB_CACHE="$FERT_HF_CACHE/hub"
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
 
 RUNS_ROOT="$FERT_REPO/flux/tasks/masked_lora/runs"
 
 mkdir -p flux/tasks/masked_lora/logs
 
+run_metrics() {
+    local CONCEPT="$1"
+    local PREFIX="$2"
+    local OUT_DIR="$3"
+    echo "--- concept=${CONCEPT}  prefix=${PREFIX} ---"
+    python metrics/eval_masked.py \
+        --concept     "${CONCEPT}" \
+        --edit_prefix "${PREFIX}" \
+        --runs_root   "${RUNS_ROOT}" \
+        --output_dir  "${OUT_DIR}" \
+        --device      cuda
+    echo ""
+}
+
 echo "================================================================"
-echo "=== METRICHE MASKED LORA — tutti i concept                 ==="
+echo "=== METRICHE MASKED LORA — trial_v1                        ==="
 echo "================================================================"
 nvidia-smi
 echo ""
 
-for C in age_person curlyhair furlength painterly smile_person; do
-    echo "--- [metrics] concept=${C} ---"
-    python metrics/eval_masked.py \
-        --concept   "${C}" \
-        --runs_root "${RUNS_ROOT}" \
-        --device    cuda
-    echo ""
-done
+run_metrics "age_person"   "age_t"        "metrics/results_trial_v1"
+run_metrics "curlyhair"    "curly_t"      "metrics/results_trial_v1"
+run_metrics "furlength"    "furlength_t"  "metrics/results_trial_v1"
+run_metrics "painterly"    "painterly_t"  "metrics/results_trial_v1"
+run_metrics "smile_person" "smile_t"      "metrics/results_trial_v1"
 
 echo "================================================================"
-echo "=== COMPLETATO — risultati in metrics/results/              ==="
+echo "=== METRICHE MASKED LORA — federico_v2                     ==="
+echo "================================================================"
+echo ""
+
+run_metrics "age_person"   "age_f"        "metrics/results_federico_v2"
+run_metrics "curlyhair"    "curly_f"      "metrics/results_federico_v2"
+run_metrics "furlength"    "furlength_f"  "metrics/results_federico_v2"
+run_metrics "painterly"    "painterly_f"  "metrics/results_federico_v2"
+run_metrics "smile_person" "smile_f"      "metrics/results_federico_v2"
+
+echo "================================================================"
+echo "=== COMPLETATO                                              ==="
+echo "  trial_v1  : metrics/results_trial_v1/"
+echo "  federico  : metrics/results_federico_v2/"
 echo "================================================================"

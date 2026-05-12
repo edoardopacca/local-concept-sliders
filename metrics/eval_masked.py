@@ -57,9 +57,8 @@ DEFAULT_OUTPUT_DIR = "metrics/results"
 CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 
-def discover_scales(run_dirs: List[Path], concept: str) -> List[float]:
+def discover_scales(run_dirs: List[Path], prefix: str) -> List[float]:
     """Auto-detect available slider scales from existing edited images."""
-    prefix = CONCEPT_EDIT_PREFIX[concept]
     for run_dir in run_dirs:
         scales = sorted(
             float(p.stem.split("_s")[-1])
@@ -83,6 +82,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output_dir", type=Path, default=Path(DEFAULT_OUTPUT_DIR))
     p.add_argument("--run_prefix", type=str, default=None,
                    help="Override run-dir prefix (default: eval_{concept}_)")
+    p.add_argument("--edit_prefix", type=str, default=None,
+                   help="Override edited image prefix (default: from CONCEPT_EDIT_PREFIX). "
+                        "Use to distinguish trial vs federico results, e.g. age_t or age_f.")
+    p.add_argument("--scales", type=float, nargs="+", default=None,
+                   help="Restrict evaluation to these specific scales (e.g. --scales 5 6 8). "
+                        "Default: auto-discover from edited image filenames.")
     p.add_argument("--device", type=str, default="cuda")
     return p
 
@@ -116,9 +121,14 @@ def compute_metrics(
     clip_model: CLIPModel,
     clip_processor: CLIPProcessor,
     device: str,
+    prefix: Optional[str] = None,
 ) -> Optional[Dict]:
-    prefix = CONCEPT_EDIT_PREFIX[concept]
+    if prefix is None:
+        prefix = CONCEPT_EDIT_PREFIX[concept]
+    # Bash writes scale as-is (e.g. "3" not "3.0"), so try both formats.
     edited_path = run_dir / f"edited_{prefix}_s{scale:.1f}.png"
+    if not edited_path.exists() and scale == int(scale):
+        edited_path = run_dir / f"edited_{prefix}_s{int(scale)}.png"
     base_path   = run_dir / "base.png"
     mask_path   = run_dir / "mask_target.png"
 
@@ -207,6 +217,7 @@ def main() -> None:
         print("[warn] CUDA not available, falling back to CPU")
         device = "cpu"
 
+    edit_prefix = args.edit_prefix or CONCEPT_EDIT_PREFIX[args.concept]
     run_prefix = args.run_prefix or f"eval_{args.concept}_"
     runs = sorted(
         d for d in args.runs_root.iterdir()
@@ -216,14 +227,15 @@ def main() -> None:
         print(f"[!] No run dirs found with prefix '{run_prefix}' in {args.runs_root}")
         return
 
-    scales = discover_scales(runs, args.concept)
+    scales = sorted(args.scales) if args.scales is not None else discover_scales(runs, edit_prefix)
     if not scales:
-        print(f"[!] No edited images found for concept '{args.concept}' — run phase3 first.")
+        print(f"[!] No edited images found for concept '{args.concept}' "
+              f"(prefix '{edit_prefix}') — run phase3 first.")
         return
     scale_to_idx = {s: i + 1 for i, s in enumerate(scales)}
 
-    print(f"[eval_masked]  concept={args.concept}  runs={len(runs)}  "
-          f"scales={scales} → labels={list(scale_to_idx.values())}  device={device}")
+    print(f"[eval_masked]  concept={args.concept}  edit_prefix={edit_prefix}  "
+          f"runs={len(runs)}  scales={scales} → labels={list(scale_to_idx.values())}  device={device}")
 
     # Load models once
     print("  loading LPIPS (alex)...")
@@ -236,7 +248,8 @@ def main() -> None:
 
     for run_dir in runs:
         for scale in scales:
-            row = compute_metrics(run_dir, args.concept, scale, lp_model, cl_model, cl_proc, device)
+            row = compute_metrics(run_dir, args.concept, scale, lp_model, cl_model, cl_proc, device,
+                                  prefix=edit_prefix)
             if row is None:
                 print(f"  [skip] {run_dir.name}  s={scale:.1f}  (missing files)")
                 continue

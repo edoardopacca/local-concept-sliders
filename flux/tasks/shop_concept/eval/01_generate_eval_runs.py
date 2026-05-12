@@ -56,7 +56,7 @@ from flux.tasks.shop_concept.scripts.generate import (
 from safetensors.torch import load_file
 
 
-EVAL_SCALES = [1.0, 2.0, 3.0]
+DEFAULT_EVAL_SCALES = [1.0, 2.0, 3.0]
 PROMPTS_YAML = Path(__file__).parent / "prompts.yaml"
 
 
@@ -86,6 +86,8 @@ def build_parser() -> argparse.ArgumentParser:
                    default="flux/tasks/shop_concept/_peft_cache",
                    help="Cache per conversioni .pt -> safetensors PEFT.")
     p.add_argument("--device", type=str, default="cuda")
+    p.add_argument("--eval_scales", type=float, nargs="+", default=None,
+                   help="Slider scales to generate (default: 1.0 2.0 3.0).")
     p.add_argument("--mode", choices=["all", "base_only", "edited_only"],
                    default="all",
                    help="all: base+mask+edited; base_only: solo base+mask; "
@@ -156,8 +158,9 @@ def main() -> None:
         print("[warn] CUDA non disponibile, uso CPU")
         device = "cpu"
 
+    eval_scales = args.eval_scales if args.eval_scales is not None else DEFAULT_EVAL_SCALES
     prompts = load_concept_prompts(args.concept)
-    print(f"[eval] concept={args.concept}  n_prompts={len(prompts)}")
+    print(f"[eval] concept={args.concept}  n_prompts={len(prompts)}  scales={eval_scales}")
 
     # --- Carica RealGenerationPipeline ---
     print(f"[eval] loading Flux pipeline from {args.model_id} ...")
@@ -192,7 +195,7 @@ def main() -> None:
             base_done   = base_path.exists() and mask_path.exists()
             edited_done = all(
                 (run_dir / f"edited_lorashop_s{s:.1f}.png").exists()
-                for s in EVAL_SCALES
+                for s in eval_scales
             )
 
             # Skip logic per mode
@@ -259,7 +262,7 @@ def main() -> None:
                     "steps":           args.steps,
                     "guidance_scale":  args.guidance_scale,
                     "edit_start_step": args.edit_start_step,
-                    "eval_scales":     EVAL_SCALES,
+                    "eval_scales":     eval_scales,
                 }
                 (run_dir / "metadata.json").write_text(
                     json.dumps(meta, indent=2), encoding="utf-8"
@@ -268,7 +271,7 @@ def main() -> None:
                 continue
 
             # --- Step 2: genera immagini editate per ogni scale ---
-            for scale in EVAL_SCALES:
+            for scale in eval_scales:
                 out_path = run_dir / f"edited_lorashop_s{scale:.1f}.png"
                 if out_path.exists():
                     continue
@@ -304,7 +307,7 @@ def main() -> None:
                 "steps":           args.steps,
                 "guidance_scale":  args.guidance_scale,
                 "edit_start_step": args.edit_start_step,
-                "eval_scales":     EVAL_SCALES,
+                "eval_scales":     eval_scales,
             }
             (run_dir / "metadata.json").write_text(
                 json.dumps(meta, indent=2), encoding="utf-8"
