@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=flux_eval_fur_p1
+#SBATCH --account=3352759
 #SBATCH --partition=stud
 #SBATCH --qos=stud
 #SBATCH --gpus=1
@@ -13,8 +14,8 @@
 # eval_furlength_phase1.slurm  (Flux)
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione furlength.
-# Fase 2 (SAM) in locale: cliccare sul corpo di UN animale (il primo/più
-# visibile se ce ne sono più di uno).
+# Prompt LoRAShop-style: scene specifiche, ≥2 animali distinti, photorealistic.
+# Fase 2 (SAM) in locale: cliccare sul corpo del PRIMO cane menzionato.
 #
 # Output: flux/tasks/masked_lora/runs/eval_furlength_{01..20}/
 # =============================================================================
@@ -48,26 +49,26 @@ declare -a SEEDS=(
 )
 
 declare -a PROMPTS=(
-    "a golden retriever and a labrador, photorealistic, 4k"
-    "a golden retriever and a cat, photorealistic, 4k"
-    "a husky and a border collie, photorealistic, 4k"
-    "a poodle and a golden retriever, photorealistic, 4k"
-    "a labrador and a cat, photorealistic, 4k"
-    "two dogs in a field, photorealistic, 4k"
-    "a golden retriever and a persian cat, photorealistic, 4k"
-    "a husky and a siamese cat, photorealistic, 4k"
-    "a border collie and a maine coon cat, photorealistic, 4k"
-    "a poodle and a domestic cat, photorealistic, 4k"
-    "a golden retriever and a labrador sitting together, photorealistic, 4k"
-    "a husky and a cat on a couch, photorealistic, 4k"
-    "two dogs in a park, photorealistic, 4k"
-    "a labrador and a border collie, photorealistic, 4k"
-    "a golden retriever and a cat on grass, photorealistic, 4k"
-    "a poodle and a persian cat, photorealistic, 4k"
-    "a golden retriever and a husky, photorealistic, 4k"
-    "a labrador and a maine coon cat, photorealistic, 4k"
-    "a border collie and a siamese cat, photorealistic, 4k"
-    "two dogs and a cat, photorealistic, 4k"
+    "a golden retriever and a labrador resting on a sunlit hardwood floor next to a large window, pet portrait, photorealistic, 4k"
+    "a husky and a border collie playing in a snowy backyard at dawn, outdoor pet photo, photorealistic, 4k"
+    "a poodle and a corgi waiting at the door of a country cottage, candid pet photo, photorealistic, 4k"
+    "a beagle and a dachshund napping together on a tartan blanket beside a fireplace, indoor pet portrait, photorealistic, 4k"
+    "a German shepherd and a labrador walking along a pebble beach at sunset, outdoor photo, photorealistic, 4k"
+    "a samoyed and a malamute sitting in a snowy alpine meadow, outdoor pet portrait, photorealistic, 4k"
+    "a cocker spaniel and a basset hound resting on a wooden porch in summer, candid pet photo, photorealistic, 4k"
+    "a chihuahua and a pug curled up together on a velvet armchair, indoor pet portrait, photorealistic, 4k"
+    "a shiba inu and a jack russell terrier exploring a mossy forest path, outdoor photo, photorealistic, 4k"
+    "an Australian shepherd and a border collie running through a wheat field at golden hour, outdoor pet photo, photorealistic, 4k"
+    "a dalmatian and a boxer sitting at attention in a leafy city park, candid pet photo, photorealistic, 4k"
+    "a maltese and a bichon frise on a flowered garden bench, outdoor pet portrait, photorealistic, 4k"
+    "a saint bernard and a bernese mountain dog resting in a mountain pasture, outdoor photo, photorealistic, 4k"
+    "a doberman and a rottweiler sitting on a stone patio at dusk, outdoor pet portrait, photorealistic, 4k"
+    "a yorkshire terrier and a maltese on a polished marble kitchen floor, indoor pet photo, photorealistic, 4k"
+    "a great dane and a golden retriever standing together on a country road, outdoor portrait, photorealistic, 4k"
+    "an Irish setter and a springer spaniel beside a lakeside dock at sunrise, outdoor pet photo, photorealistic, 4k"
+    "a french bulldog and a pug napping on a sunny windowsill, indoor pet portrait, photorealistic, 4k"
+    "a cavalier king charles spaniel and a beagle playing in an English garden, outdoor photo, photorealistic, 4k"
+    "a vizsla and a weimaraner standing alert in a misty field at dawn, outdoor pet portrait, photorealistic, 4k"
 )
 
 for i in "${!SEEDS[@]}"; do

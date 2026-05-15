@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=flux_eval_smile_p1
+#SBATCH --account=3352759
 #SBATCH --partition=stud
 #SBATCH --qos=stud
 #SBATCH --gpus=1
@@ -13,8 +14,9 @@
 # eval_smile_person_phase1.slurm  (Flux)
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione smile_person.
-# Stessi prompt e semi di age_person (slider gender-specific per donne).
-# Fase 2 (SAM) in locale: cliccare sul viso di una qualsiasi donna.
+# Prompt LoRAShop-style: scene specifiche, ≥2 persone, photorealistic, una
+# donna identificabile come target.
+# Fase 2 (SAM) in locale: cliccare sul viso della donna (target_prompt).
 #
 # Output: flux/tasks/masked_lora/runs/eval_smile_person_{01..20}/
 # =============================================================================
@@ -48,26 +50,26 @@ declare -a SEEDS=(
 )
 
 declare -a PROMPTS=(
-    "two women, photorealistic portrait, 4k"
-    "a woman and a man, photorealistic portrait, 4k"
-    "two women and a man, photorealistic portrait, 4k"
-    "a woman and two men, photorealistic portrait, 4k"
-    "three women, photorealistic portrait, 4k"
-    "two white women, photorealistic portrait, 4k"
-    "a black woman and a white man, photorealistic portrait, 4k"
-    "two asian women, photorealistic portrait, 4k"
-    "a hispanic woman and a man, photorealistic portrait, 4k"
-    "an indian woman and a man, photorealistic portrait, 4k"
-    "a mother and daughter, photorealistic portrait, 4k"
-    "two women sitting together, photorealistic portrait, 4k"
-    "a woman and an elderly man, photorealistic portrait, 4k"
-    "two women outdoor, photorealistic portrait, 4k"
-    "a woman and a man, studio lighting, photorealistic portrait, 4k"
-    "two women, neutral background, photorealistic portrait, 4k"
-    "a young woman and an older woman, photorealistic portrait, 4k"
-    "two women and two men, photorealistic portrait, 4k"
-    "a woman and a man, close-up, photorealistic portrait, 4k"
-    "three people including two women, photorealistic portrait, 4k"
+    "a woman in a white silk blouse and a man in a navy blazer share espresso at a Parisian café, neutral expression, portrait photo, photorealistic, 4k"
+    "two women in floral summer dresses walk through a sunlit botanical garden, facing the camera, neutral expression, candid portrait, photorealistic, 4k"
+    "a woman in a gray cashmere sweater and a man in a tweed coat read newspapers by a fireplace, neutral expression, indoor portrait, photorealistic, 4k"
+    "a woman in a beige trench coat and a man in a wool overcoat wait at a London bus stop, neutral expression, candid photo, photorealistic, 4k"
+    "a young woman in a red wool sweater and an elderly man in a corduroy jacket sit on a park bench in autumn, neutral expression, outdoor portrait, photorealistic, 4k"
+    "a woman in a black silk blouse and a man in a charcoal suit toast champagne at a rooftop dinner, neutral expression, portrait photo, photorealistic, 4k"
+    "two women in matching denim jackets browse vinyl records at a vintage shop, neutral expression, candid photo, photorealistic, 4k"
+    "a woman in a teal wrap dress and a man in a linen shirt dance at a beach wedding reception, neutral expression, outdoor portrait, photorealistic, 4k"
+    "a woman in a yellow sundress and a man in a striped polo enjoy gelato on a Mediterranean piazza, neutral expression, candid portrait, photorealistic, 4k"
+    "a woman in a navy peacoat and a man in a thick wool scarf admire the view from a snowy mountain overlook, facing the camera, neutral expression, outdoor photo, photorealistic, 4k"
+    "a mother in a soft pink cardigan and her teenage daughter in a graphic t-shirt bake cookies in a sunlit kitchen, neutral expression, candid photo, photorealistic, 4k"
+    "a woman in a green plaid blazer and a man in a brown leather jacket sit at a vintage bookstore reading area, neutral expression, indoor portrait, photorealistic, 4k"
+    "two women in evening gowns share a moment under a chandelier at an art gallery opening, neutral expression, candid portrait, photorealistic, 4k"
+    "a woman in an emerald velvet dress and a man in a dark suit sit by candlelight at a fine dining restaurant, facing the camera, neutral expression, indoor portrait, photorealistic, 4k"
+    "a woman in a chunky knit sweater and a man in a parka warm their hands by a campfire at a winter cabin, neutral expression, outdoor photo, photorealistic, 4k"
+    "a young woman in a denim jacket and her grandmother in a lavender shawl tend to a cottage garden, neutral expression, outdoor portrait, photorealistic, 4k"
+    "two women in athletic wear stretch on yoga mats in a bright urban studio, facing the camera, neutral expression, candid photo, photorealistic, 4k"
+    "a woman in a cream silk blouse and a man in an oxford shirt collaborate over a laptop at a coworking space, neutral expression, indoor portrait, photorealistic, 4k"
+    "a woman in a coral linen shirt and a man in a panama hat browse fresh produce at a Sunday farmers market, neutral expression, outdoor photo, photorealistic, 4k"
+    "a woman in a tailored black blazer and a man in a slate gray shirt review architectural plans on a construction site, neutral expression, candid portrait, photorealistic, 4k"
 )
 
 for i in "${!SEEDS[@]}"; do

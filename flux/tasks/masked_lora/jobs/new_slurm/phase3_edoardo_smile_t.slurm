@@ -1,0 +1,71 @@
+#!/bin/bash
+#SBATCH --job-name=p3_edo_smile_t
+#SBATCH --account=3352759
+#SBATCH --partition=gpunew
+#SBATCH --qos=normal
+#SBATCH --gpus=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=48G
+#SBATCH --time=02:30:00
+#SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
+#SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
+
+# Phase 3 masked LoRA — smile_t (trial_v1) × 20 run — Edoardo
+# scales: 1, 1.5, 2
+
+set -euo pipefail
+
+source "$SLURM_SUBMIT_DIR/tools/set_slurms.sh"
+cd "$FERT_REPO"
+activate_flux_env
+
+export HF_HOME="$FERT_HF_CACHE"
+export HF_HUB_CACHE="$FERT_HF_CACHE/hub"
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+RUNS_ROOT="$FERT_REPO/flux/tasks/masked_lora/runs"
+CACHE_DIR="$FERT_REPO/flux/tasks/masked_lora/_peft_cache_smile_t"
+T_ROOT="$FERT_REPO/flux/trained_sliders/sliders/trial_v1"
+
+mkdir -p flux/tasks/masked_lora/logs "$CACHE_DIR"
+
+echo "================================================================"
+echo "=== PHASE 3 — smile_t (trial_v1) × 20 run                  ==="
+echo "================================================================"
+nvidia-smi
+echo ""
+
+CONCEPT="smile_person"
+SLIDER="${T_ROOT}/smile_person_flux_v1/flux-smile_person_flux_v1/slider_0.pt"
+PREFIX="smile_t"
+SCALES="1 1.5 2"
+
+for i in $(seq 1 20); do
+    RUN_NUM=$(printf "%02d" "$i")
+    RUN_DIR="${RUNS_ROOT}/eval_${CONCEPT}_${RUN_NUM}"
+    [ -d "$RUN_DIR" ] || { echo "[SKIP] dir mancante: $RUN_DIR"; continue; }
+    [ -f "${RUN_DIR}/mask_target.png" ] || { echo "[SKIP] mask mancante: $RUN_DIR"; continue; }
+
+    python flux/tasks/masked_lora/scripts/03_masked_edit.py \
+        --run_dir      "$RUN_DIR" \
+        --slider_path  "$SLIDER" \
+        --slider_scales $SCALES \
+        --mask_name    mask_target.png \
+        --lora_fill_rank 16 \
+        --cache_dir    "$CACHE_DIR" \
+        --device       cuda
+
+    for SCALE in $SCALES; do
+        SRC="${RUN_DIR}/edited_scale${SCALE}.png"
+        [ -f "$SRC" ] || SRC="${RUN_DIR}/edited_scale${SCALE}.0.png"
+        DST="${RUN_DIR}/edited_${PREFIX}_s${SCALE}.png"
+        [ -f "$SRC" ] && mv "$SRC" "$DST"
+    done
+    echo "  [ok] eval_${CONCEPT}_${RUN_NUM}"
+done
+
+echo "================================================================"
+echo "=== DONE smile_t — s1, s1.5, s2                            ==="
+echo "================================================================"

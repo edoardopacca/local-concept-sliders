@@ -3,8 +3,6 @@
 #SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
-#SBATCH --nodes=1
-#SBATCH --nodelist=gnode02,gnode04
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
@@ -12,9 +10,19 @@
 #SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
 #SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
-# Phase 3 masked LoRA — furlength × 20 run — Edoardo
-# furlength_t (trial_v1)   : s1, s2, s3
-# furlength_f (federico_v2): s5, s7, s8
+# =============================================================================
+# phase3_edoardo_furlength.slurm
+# =============================================================================
+# Phase 3 masked LoRA — furlength × 20 run — Edoardo (basato su rebe).
+# Prerequisiti in RUNS_ROOT:
+#   eval_furlength_{01..20}/base.png + mask_target.png + metadata.json
+#
+# Pesi richiesti (in $FERT_REPO):
+#   trial_v1 : flux/trained_sliders/sliders/trial_v1/furlength_dog_flux_v1/flux-furlength_dog_flux_v1/slider_0.pt
+#
+# Output per ogni run:
+#   edited_furlength_t_s{1,2,3}.png   (trial_v1)
+# =============================================================================
 
 set -euo pipefail
 
@@ -31,7 +39,6 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 RUNS_ROOT="$FERT_REPO/flux/tasks/masked_lora/runs"
 CACHE_DIR="$FERT_REPO/flux/tasks/masked_lora/_peft_cache"
 T_ROOT="$FERT_REPO/flux/trained_sliders/sliders/trial_v1"
-F_ROOT="$FERT_REPO/flux/trained_sliders/sliders/federico_v2"
 
 mkdir -p flux/tasks/masked_lora/logs "$CACHE_DIR"
 
@@ -78,12 +85,7 @@ run_concept "furlength" \
     "${T_ROOT}/furlength_dog_flux_v1/flux-furlength_dog_flux_v1/slider_0.pt" \
     "furlength_t" "1 2 3"
 
-run_concept "furlength" \
-    "${F_ROOT}/flux-fur_flux_v2_custom/slider_0.pt" \
-    "furlength_f" "5 7 8"
-
 echo "================================================================"
-echo "=== PHASE 3 furlength COMPLETATA                           ==="
-echo "  furlength_t (trial_v1)   : s1, s2, s3"
-echo "  furlength_f (federico_v2): s5, s7, s8"
+echo "=== PHASE 3 furlength COMPLETATA                          ==="
+echo "  furlength_t (trial_v1) : s1, s2, s3"
 echo "================================================================"
