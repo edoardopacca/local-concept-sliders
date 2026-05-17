@@ -77,6 +77,12 @@ def generate_base_and_save(
 
     # Use fully standard Diffusers call (same reliability as baseline scripts).
     # Do not inject custom latents here; this avoids accidental noisy outputs.
+    # We DO pass an explicit generator freshly re-seeded from `seed` (the one
+    # above was consumed by prepare_latents). With set_determinism this is
+    # bit-identical to the previous behaviour (which relied on the CUDA
+    # global state), but it makes the init noise contractually equal to the
+    # one phase 3 reconstructs from metadata, so the "all-sliders-off" run
+    # in phase 3 reproduces base.png bit-exact.
     image = pipe(
         prompt=prompt,
         negative_prompt=negative_prompt,
@@ -85,6 +91,7 @@ def generate_base_and_save(
         guidance_scale=guidance_scale,
         height=height,
         width=width,
+        generator=torch.Generator(device=device).manual_seed(seed),
     ).images[0]
     image.save(run_dir / "base.png")
 
