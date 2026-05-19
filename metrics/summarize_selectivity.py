@@ -59,13 +59,14 @@ def get_medians(rows: list[dict], slider_type: str, scale: float) -> dict | None
 
 
 def pick_best_scale(rows: list[dict], scales: list[float]) -> float:
-    """Scale with highest clip_sel_median / lpips_sel_median for the specific slider."""
+    """Scale with highest clip_sel_median * lpips_sel_median for the specific slider.
+    Both metrics are higher = better (post 2026-05-14 convention)."""
     best_sc, best_score = scales[0], -1.0
     for sc in scales:
         m = get_medians(rows, "specific", sc)
         if m is None:
             continue
-        score = m["clip_sel"] / (m["lpips_sel"] + 1e-8)
+        score = m["clip_sel"] * m["lpips_sel"]
         if score > best_score:
             best_score, best_sc = score, sc
     return best_sc
@@ -118,7 +119,7 @@ def main() -> dict:
     # ── Best-scale summary table ──────────────────────────────────────────────
     sep = "=" * 82
     print(f"\n{sep}")
-    print("Best-scale summary  (scale = max clip_sel/lpips_sel for specific slider)")
+    print("Best-scale summary  (scale = max clip_sel * lpips_sel for specific slider)")
     print(sep)
     print(
         f"{'Concept':<14} {'Scale':<7} "

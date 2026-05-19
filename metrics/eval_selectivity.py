@@ -10,7 +10,7 @@ Per ogni concept (age, curlyhair, furlength, smile) e per ogni immagine base:
 Metriche per run × scale × slider_type:
   - lpips_target_raw / lpips_nontarget_raw:     LPIPS grezzo nelle due regioni
   - lpips_target_norm / lpips_nontarget_norm:   normalizzato per area (comparabile)
-  - lpips_selectivity:   lpips_nontarget_norm / lpips_target_norm  (< 1 = selettivo)
+  - lpips_selectivity:   lpips_target_norm / lpips_nontarget_norm  (> 1 = selettivo)
   - clip_delta_target / clip_delta_nontarget:   ΔCLIP nelle due regioni
   - clip_selectivity:    δtarget / (δtarget + |δnontarget|) se δtarget > 0 else 0
 
@@ -126,8 +126,9 @@ def compute_selectivity_metrics(
         _to_lp(base_np, mask_nontarget_np), _to_lp(edit_np, mask_nontarget_np)).item())
     lpips_t_norm  = lpips_t_raw  / (target_area    + 1e-8)
     lpips_nt_norm = lpips_nt_raw / (nontarget_area + 1e-8)
-    # selectivity ratio: lower = more selective (nontarget barely changed relative to target)
-    lpips_sel = lpips_nt_norm / (lpips_t_norm + 1e-8)
+    # selectivity ratio: higher = more selective (target changed much more than nontarget).
+    # Parallel to LPIPS-loc (inside/outside) and consistent with paper tables (\uparrow).
+    lpips_sel = lpips_t_norm / (lpips_nt_norm + 1e-8)
 
     # CLIP delta in each region
     base_t_img  = apply_mask(np.array(base_pil),   mask_target_np)
