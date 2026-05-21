@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-masked_Lora_FLUX/01_generate_base.py
-=====================================
-Phase 1 - generazione base Flux.
+Phase 1 of the external mask-guided pipeline on Flux: generate the base
+image without any slider, and save the metadata needed to rerun the same
+denoising trajectory in phase 3.
 
-Genera un'immagine base (senza slider) e salva:
-  - base.png            immagine decodificata
-  - metadata.json       seed, prompt, height, width, steps, scheduler_config...
+Outputs:
+  - base.png        decoded image
+  - metadata.json   seed, prompt, height, width, steps, scheduler_config, ...
 
-La seed e la scheduler_config vengono riprodotte in phase 3 per avere la
-STESSA traiettoria di denoising (necessario per un confronto pulito
-LoRAShop vs MaskedLoRA con stessa mask).
+The seed and scheduler config are reused in phase 3 so that the two passes
+follow exactly the same denoising trajectory; this is what allows a clean
+comparison between baseline and masked-edit on identical inputs.
 
-Nota: non salviamo init_latents.pt come nella versione SDXL perche' su
-Flux e' piu' pulito rigenerare i latenti iniziali da seed nel 03
-(evita mismatch di shape tra packed/unpacked).
+Initial latents are NOT saved to disk: on Flux it is simpler to regenerate
+them from the seed inside phase 3, which also avoids shape mismatches
+between the packed and unpacked layouts.
 """
 
 from __future__ import annotations
@@ -26,10 +26,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict
 
-# IMPORTANT: import flux.tasks.shop_concept BEFORE torch/diffusers for the SDPA compat
-# shim (torch 2.4 on Bocconi HPC vs diffusers>=0.36 enable_gqa kwarg).
-# shop_concept/__init__.py monkeypatches F.scaled_dot_product_attention.
-# __file__ = .../flux/tasks/masked_lora/scripts/01_generate_base.py → parents[4] = repo root
+# Import flux.tasks.shop_concept BEFORE torch/diffusers so the SDPA
+# compatibility shim is installed: diffusers >= 0.36 passes `enable_gqa`
+# to F.scaled_dot_product_attention, but that kwarg only exists on
+# torch >= 2.5. The shim (in shop_concept/__init__.py) drops it.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(_REPO_ROOT))
 import flux.tasks.shop_concept  # noqa: F401  (side-effect: install SDPA shim)

@@ -1,80 +1,41 @@
-# sdxl/tasks/masked_lora_editing (Real Image Version)
+# `sdxl/tasks/masked_lora_editing/`
 
-Pipeline parallela a `sdxl/tasks/masked_lora`, ma per editing di immagini reali.
+**Legacy real-image editing prototype, superseded.** The first
+real-image masked-edit pipeline implemented in the project: an SD-1.4
+version followed by an SDXL port, both using DDIM inversion on the
+input photograph and then the masked LoRA blend at edit time.
 
-## Obiettivo
+Superseded by [`sdxl/tasks/real_editing/`](../real_editing/), which
+uses **Tight Inversion + IP-Adapter** for the inversion and the same
+masked-edit operator on the SDXL side. The Tight-Inversion pipeline is
+the one mentioned in §1 of the paper; this folder is kept only for
+reference (early ablation results) and is not exercised by any of the
+paper experiments.
 
-Applicare slider LoRA solo in una regione spaziale (maschera SAM) su un'immagine reale:
+## Pipeline (legacy)
 
-`eps_blend = M * eps_lora + (1 - M) * eps_base`
-
-## Fasi (pipeline SD1.4 originale)
-
-1. **Phase 1 (HPC): inversione immagine reale**
-   - Script: `01_invert_real.py`
-   - Output: `original.png`, `reconstruction.png`, `x_t.pt`, `uncond_embeddings.pt`, `metadata.json`
-2. **Phase 2 (Locale o HPC): segmentazione SAM**
-   - Script: `02_segment_with_sam.py`
-   - Output: `mask_target.png`, `mask_meta.json`
-3. **Phase 3 (HPC): masked edit LoRA**
-   - Script: `03_masked_edit_real.py`
-   - Output: `edited_target_only.png`, `edit_meta.json`, `metrics.json`
-
-## Job Slurm pronti (SD1.4)
-
-- `jobs/run_phase1.slurm`
-- `jobs/run_phase3.slurm`
-
-Entrambi sono configurati con le stesse convenzioni cluster di `sdxl/tasks/masked_lora`:
-`account=3226571`, `partition=stud`, `qos=stud`.
-
-## Esempio rapido
-
-### Phase 1
-
-```bash
-sbatch sdxl/tasks/masked_lora_editing/jobs/old_slurm/run_phase1.slurm
+```
+Phase 1 (HPC)              Phase 2 (local)                Phase 3 (HPC)
+DDIM inversion of the      SAM mask on reconstruction.png masked LoRA edit
+real image
 ```
 
-### Phase 2 (interattiva locale)
+Two backbones are implemented through the same scripts:
+`scripts/01_invert_real.py` (DDIM inversion of the input image) and
+`scripts/03_masked_edit_real.py` (masked LoRA blend at edit time).
+The SDXL variant requires SDXL sliders (the SD-1.4 sliders are not
+compatible with the SDXL UNet).
 
-```bash
-python mask_SAM/segment_with_sam.py \
-  --run_dir sdxl/tasks/masked_lora_editing/outputs/real_edit_001 \
-  --sam_checkpoint /path/to/sam_vit_h_4b8939.pth \
-  --sam_model_type vit_h \
-  --mode interactive \
-  --output_name mask_target.png
-```
+## Why it was superseded
 
-### Phase 3
+The DDIM inversion used here is unconditional: at higher slider scales
+the reconstruction drifts and the masked-edit can produce ghosting
+outside the mask. The Tight Inversion backend in
+`sdxl/tasks/real_editing/` couples each inversion step with a gradient
+descent step on the noise prediction and uses IP-Adapter as visual
+conditioning, which keeps the edit trajectory aligned with the
+inversion trajectory and removes the drift on every image we tested.
+That implementation is what the paper refers to in §1.
 
-```bash
-sbatch sdxl/tasks/masked_lora_editing/jobs/old_slurm/run_phase3.slurm
-```
-
-## Note
-
-- Questa pipeline usa SD1.4 come `sdxl/tasks/real_editing` (esiste invece il vecchio `exp_editing` rimosso).
-- In modalità HPC offline, lasciare `--skip_metrics` in phase 3.
-- Per metriche complete, servono pesi LPIPS/CLIP in cache accessibile dal compute node.
-
-## Variante SDXL (più potente)
-
-Per testare un backbone più forte, è disponibile una pipeline parallela SDXL:
-
-1. **Phase 1 SDXL (HPC): preparazione latenti da immagine reale**
-   - Script: `01_prepare_real_sdxl.py`
-   - Job: `jobs/run_phase1_sdxl.slurm`
-   - Output: `original.png`, `source_latents.pt`, `metadata.json`
-2. **Phase 2: segmentazione SAM**
-   - Script: `02_segment_with_sam.py` (stesso script della pipeline SD1.4)
-3. **Phase 3 SDXL (HPC): masked edit LoRA**
-   - Script: `03_masked_edit_real_sdxl.py`
-   - Job: `jobs/run_phase3_sdxl.slurm`
-   - Output: `edited_target_only_sdxl.png`, `edit_meta.json`, `metrics.json`
-
-### Nota importante su slider compatibili
-
-- La variante SDXL richiede slider SDXL (es. `sdxl/trained_sliders/sliders/*.pt`).
-- Gli slider SD1.4 non sono compatibili con U-Net SDXL.
+If you need a quick DDIM-only baseline on SD-1.4, this folder is still
+runnable. Otherwise, use `sdxl/tasks/real_editing/`.

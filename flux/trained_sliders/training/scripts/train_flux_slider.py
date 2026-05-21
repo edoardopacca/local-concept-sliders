@@ -1,36 +1,33 @@
 #!/usr/bin/env python
 # =============================================================================
-# train_flux_slider.py
-# =============================================================================
-# Linearized version of flux-sliders/train-flux-concept-sliders.ipynb
-# con T5 offload patch per girare su MIG A100 3g.40gb (42 GB VRAM).
+# Linearised version of the upstream `flux-sliders/train-flux-concept-sliders.ipynb`
+# notebook, with a T5 offload patch so the training fits on a ~40 GB GPU.
 #
-# Differenze chiave rispetto al notebook originale:
-#   (1) T5 + CLIP-L vengono cancellati dalla GPU DOPO aver pre-computato
-#       gli embeddings dei 3 prompt (target/positive/negative). Libera
-#       ~9.7 GB di VRAM dedicata al solo T5-XXL.
-#   (2) La chiamata `pipe(...)` dentro il training loop usa
-#       `prompt_embeds=` + `pooled_prompt_embeds=` invece del prompt
-#       testuale. Questo evita di richiedere i text encoder DOPO averli
-#       cancellati.
-#   (3) `transformer.enable_gradient_checkpointing()` attivo per ridurre
-#       ulteriormente l'utilizzo di memoria per le attivazioni.
-#   (4) CLI argparse per override rapido di `max_train_steps`, `output_dir`,
-#       `slider_name`, `target/positive/negative_prompt`, `rank`, ecc.
+# Key differences from the upstream notebook:
+#   (1) T5 + CLIP-L are evicted from GPU AFTER pre-computing the
+#       embeddings of the three training prompts (target / positive /
+#       negative). This frees ~9.7 GB of VRAM otherwise reserved for
+#       T5-XXL alone.
+#   (2) The `pipe(...)` call inside the training loop is invoked with
+#       `prompt_embeds=` + `pooled_prompt_embeds=` instead of the raw
+#       prompt strings, so the text encoders are not needed after eviction.
+#   (3) `transformer.enable_gradient_checkpointing()` is enabled to
+#       further reduce the activations memory footprint.
+#   (4) argparse CLI exposes `max_train_steps`, `output_dir`, `slider_name`,
+#       `target/positive/negative_prompt`, `rank`, ... for quick overrides.
 #
-# Uso tipico (smoke test 50 step):
+# Typical smoke-test usage (50 steps):
 #   python train_flux_slider.py \
 #       --max_train_steps 50 \
 #       --output_dir ../outputs/smoke_test \
 #       --slider_name smoke_smile
 #
-# Uso tipico (training reale 500 step):
+# Typical training usage (500 steps):
 #   python train_flux_slider.py \
 #       --max_train_steps 500 \
 #       --output_dir ../outputs/smile_man_flux_v1_rank16_xattn \
 #       --slider_name smile_man_flux_v1 \
 #       --rank 16 --alpha 1 --train_method xattn
-#
 # =============================================================================
 
 import os
@@ -44,14 +41,14 @@ from contextlib import ExitStack
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
-# CLI args PRIMA di toccare CUDA per poter cambiare CUDA_VISIBLE_DEVICES
+# Parse CLI args BEFORE touching CUDA so CUDA_VISIBLE_DEVICES can be set.
 # -----------------------------------------------------------------------------
 def parse_args():
     p = argparse.ArgumentParser("Flux Concept Slider training (MIG-friendly)")
-    # modello + training
+    # Model + training
     p.add_argument("--pretrained_model_name_or_path",
                    default="black-forest-labs/FLUX.1-dev",
-                   help="Repo HF o path locale al modello Flux")
+                   help="HuggingFace repo or local path to the Flux model")
     p.add_argument("--max_train_steps", type=int, default=500)
     p.add_argument("--rank", type=int, default=16)
     p.add_argument("--alpha", type=float, default=1.0)
@@ -62,46 +59,46 @@ def parse_args():
     p.add_argument("--lr_warmup_steps", type=int, default=200)
     p.add_argument("--lr_scheduler", default="constant")
     p.add_argument("--eta", type=float, default=2.0,
-                   help="Peso del boost nel gt Eq.7 Concept Sliders")
-    # prompt (single-triple CLI, usato solo se --prompts_yaml NON e' fornito)
+                   help="Boost weight of the Concept Sliders objective")
+    # Prompts (single-triple CLI, used only when --prompts_yaml is not provided)
     p.add_argument("--target_prompt", default="picture of a person")
     p.add_argument("--positive_prompt", default="photo of a person, smiling, happy")
     p.add_argument("--negative_prompt", default="photo of a person, frowning")
     p.add_argument("--slider_name", default="person-smiling")
-    # prompt YAML (SDXL-compatible: lista di entries con target/positive/
-    # unconditional/neutral/guidance_scale). Se fornito, override dei
-    # tre prompt CLI. Abilita multi-entry sampling + preservation via
-    # Eq.7 degeneration (v3_yaml_trick style: woman entries con
-    # target==positive==unconditional==neutral collapsano la loss in
-    # MSE(LoRA_on, LoRA_off) = preservation pura).
+    # Prompts YAML (SDXL-compatible: list of entries with target/positive/
+    # unconditional/neutral/guidance_scale). When provided it overrides the
+    # three CLI prompts and enables multi-entry sampling + preservation via
+    # Concept Sliders objective degeneration (yaml-trick style: woman entries with
+    # target==positive==unconditional==neutral collapse the loss into
+    # MSE(LoRA_on, LoRA_off) = pure preservation).
     p.add_argument("--prompts_yaml", default=None,
-                   help="Path a YAML con lista di entries prompt. Override "
-                        "di --target/positive/negative_prompt. Abilita "
-                        "multi-prompt sampling stile SDXL train.py.")
-    # tecnico
+                   help="Path to a YAML file with a list of prompt entries. Overrides "
+                        "--target/positive/negative_prompt and enables "
+                        "multi-prompt sampling, mirroring SDXL train.py.")
+    # Technical
     p.add_argument("--height", type=int, default=512)
     p.add_argument("--width", type=int, default=512)
     p.add_argument("--num_inference_steps", type=int, default=30)
     p.add_argument("--guidance_scale", type=float, default=3.5)
     p.add_argument("--max_sequence_length", type=int, default=512)
     p.add_argument("--bsz", type=int, default=1)
-    # output
+    # Output
     p.add_argument("--output_dir", default="flux/trained_sliders/sliders/flux_slider_default")
     p.add_argument("--save_every", type=int, default=0,
-                   help="Salva checkpoint intermedio ogni N step; 0 = solo alla fine")
+                   help="Save an intermediate checkpoint every N steps; 0 = only the final one")
     p.add_argument("--seed", type=int, default=None)
-    # flag tecnici
+    # Technical flags
     p.add_argument("--cuda_device", default="0",
-                   help="CUDA_VISIBLE_DEVICES (default '0' = prima GPU MIG slice)")
+                   help="CUDA_VISIBLE_DEVICES value (default '0')")
     p.add_argument("--no_gradient_checkpointing", action="store_true",
-                   help="Disabilita gradient checkpointing (solo se hai molta VRAM)")
+                   help="Disable gradient checkpointing (only when plenty of VRAM is available)")
     return p.parse_args()
 
 
 args = parse_args()
 
 # -----------------------------------------------------------------------------
-# CUDA setup PRIMA di import torch
+# CUDA setup BEFORE importing torch
 # -----------------------------------------------------------------------------
 os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_device
 
@@ -109,12 +106,12 @@ import torch
 import numpy as np
 
 # -----------------------------------------------------------------------------
-# Patch compat: torch 2.4 <-> diffusers 0.35+ (scaled_dot_product_attention)
+# Compatibility patch: torch 2.4 <-> diffusers 0.35+ (scaled_dot_product_attention)
 # -----------------------------------------------------------------------------
-# diffusers >= 0.35 passa enable_gqa=False a F.scaled_dot_product_attention,
-# ma quel kwarg esiste solo da torch >= 2.5. Flux usa MHA pura (24 head,
-# nessuna condivisione KV), quindi strippare il kwarg e' semanticamente
-# equivalente al default. Rimuovere queste righe se/quando si upgrada a
+# diffusers >= 0.35 passes enable_gqa=False to F.scaled_dot_product_attention,
+# but that kwarg only exists in torch >= 2.5. Flux uses plain MHA (24 heads,
+# no KV sharing), so dropping the kwarg is semantically
+# equivalent to the default. Remove these lines once we upgrade to
 # torch >= 2.5.
 _torch_ver = tuple(int(x) for x in torch.__version__.split("+")[0].split(".")[:2])
 if _torch_ver < (2, 5):
@@ -124,7 +121,7 @@ if _torch_ver < (2, 5):
         return _orig_sdpa(*sdpa_args, **sdpa_kwargs)
     torch.nn.functional.scaled_dot_product_attention = _patched_sdpa
     print(f"[compat] torch {torch.__version__} < 2.5: monkeypatched "
-          f"F.scaled_dot_product_attention per strippare enable_gqa kwarg")
+          f"F.scaled_dot_product_attention to drop the enable_gqa kwarg")
 
 print(f"[path] CWD = {os.getcwd()}")
 
@@ -151,7 +148,7 @@ from flux.core.lora import (
     UNET_TARGET_REPLACE_MODULE_CONV,
 )
 
-# silenzia verbose
+# Silence verbose logs
 import transformers as _tf
 _tf.logging.set_verbosity_error()
 import diffusers as _df
@@ -165,7 +162,7 @@ if args.seed is not None:
     np.random.seed(args.seed)
 
 # -----------------------------------------------------------------------------
-# Config locale (come Cell 3 del notebook)
+# Local config (mirrors Cell 3 of the upstream notebook)
 # -----------------------------------------------------------------------------
 pretrained_model_name_or_path = args.pretrained_model_name_or_path
 weight_dtype = torch.bfloat16
@@ -215,9 +212,9 @@ print(f"[config] output_dir    = {os.path.abspath(output_dir)}")
 # Formato YAML atteso (lista di dict, SDXL-compatible):
 #   - target: "..."
 #     positive: "..."
-#     unconditional: "..."   (<- usato come "negative" in Eq.7 Flux)
+#     unconditional: "..."   (used as the "negative" prompt)
 #     neutral: "..."         (<- default: uguale a target)
-#     guidance_scale: 2.0    (<- usato come eta per questa entry)
+#     guidance_scale: 2.0    (used as the per-entry eta)
 #
 # Per entries di preservation: target == positive == unconditional ==
 # neutral -> (positive - unconditional) = 0 -> gt = neutral_pred
@@ -399,14 +396,14 @@ text_encoder_two.to(device)
 
 if not args.no_gradient_checkpointing:
     transformer.enable_gradient_checkpointing()
-    print("[grad-ckpt] abilitato su transformer")
+    print("[grad-ckpt] enabled on transformer")
 
-mem_report("dopo load full stack (T5 ancora in VRAM)")
+mem_report("after full stack load (T5 still in VRAM)")
 
 # -----------------------------------------------------------------------------
 # STEP C — Pre-compute embeddings per tutte le entries, poi FREE dei text encoder
 # -----------------------------------------------------------------------------
-# Cache per-string evita di ri-encodare lo stesso prompt quando compare
+# Per-string cache avoids re-encoding the same prompt when it appears
 # in piu' entries (tipico: target == neutral, oppure woman-preservation
 # dove target == positive == unconditional == neutral).
 print("\n=== [C] Pre-computing text embeddings per tutte le entries ===")
@@ -450,7 +447,7 @@ for i, entry in enumerate(prompt_entries):
 _n_uniq = len(_emb_cache)
 _sample_shape = next(iter(_emb_cache.values()))[0].shape
 print(f"  entries precomputed   = {len(precomputed_entries)}")
-print(f"  prompt strings unici  = {_n_uniq} (dedup via cache)")
+print(f"  unique prompt strings = {_n_uniq} (dedup via cache)")
 print(f"  shape prompt_embeds   = {_sample_shape}")
 del _emb_cache  # liberiamo il dict, i tensori restano referenziati dalle entries
 
@@ -465,7 +462,7 @@ del text_encoder_two
 del tokenizer_one
 del tokenizer_two
 flush()
-mem_report("dopo T5 offload (T5+CLIP-L fuori)")
+mem_report("after T5 offload (T5 + CLIP-L removed)")
 
 # -----------------------------------------------------------------------------
 # STEP E — Setup LoRA + optimizer + pipe
@@ -493,7 +490,7 @@ pipe = FluxPipeline(
     transformer,
 )
 pipe.set_progress_bar_config(disable=True)
-mem_report("dopo LoRA + pipe init")
+mem_report("after LoRA + pipe init")
 
 lr_scheduler = get_scheduler(
     args.lr_scheduler, optimizer=optimizer,
@@ -593,10 +590,10 @@ for epoch in range(max_train_steps):
     )
 
     # --- forwards SENZA grad, LoRA OFF, DEDUPLICATI per string equality ---
-    # Per v3_yaml_trick le woman entries hanno target==positive==unconditional
-    # ==neutral, quindi 1 unico prompt -> 1 solo forward (invece di 4).
-    # Per man entries invece ci sono 3 prompt distinti (target==neutral),
-    # quindi 3 forwards. Dedup via dict keyed sulla stringa del prompt.
+    # When an entry has target == positive == unconditional == neutral
+    # there is only 1 distinct prompt -> 1 forward (instead of 4).
+    # Entries with target == neutral have 3 distinct prompts -> 3 forwards.
+    # Dedup via dict keyed on the prompt string.
     with torch.no_grad():
         _off_cache = {}  # prompt_str -> pred (unpacked)
 
@@ -618,7 +615,7 @@ for epoch in range(max_train_steps):
             _off_cache[pstr] = pred
             return pred
 
-        # 4 forward slots (con dedup: spesso sono meno forward effettivi)
+        # 4 forward slots (dedup often reduces the number of actual forwards)
         target_pred = _forward_off(
             entry["target_str"],
             entry["target_emb"], entry["target_pool"], entry["target_txtid"],
@@ -666,10 +663,10 @@ for epoch in range(max_train_steps):
     if epoch in (0, 1, 5, 20) or (epoch > 0 and epoch % 100 == 0):
         mem_report(f"step {epoch}")
         if epoch > 0 and epoch % 100 == 0:
-            print(f"[entry-sampling] dopo {epoch} step: "
+            print(f"[entry-sampling] after {epoch} steps: "
                   f"{entry_sample_count}")
 
-    # checkpoint intermedio
+    # Intermediate checkpoint
     if args.save_every > 0 and (epoch + 1) % args.save_every == 0 and (epoch + 1) < max_train_steps:
         save_path = Path(output_dir) / f"flux-{slider_name}_step{epoch+1}"
         save_path.mkdir(parents=True, exist_ok=True)
@@ -677,7 +674,7 @@ for epoch in range(max_train_steps):
             networks[i].save_weights(
                 str(save_path / f"slider_{i}.pt"), dtype=weight_dtype,
             )
-        print(f"[ckpt] intermedio salvato in {save_path}")
+        print(f"[ckpt] intermediate checkpoint saved at {save_path}")
 
 t_end = time.time()
 print(f"\n=== Training Done in {(t_end - t_start)/60:.1f} min "

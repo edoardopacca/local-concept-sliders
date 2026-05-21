@@ -5,7 +5,7 @@ deterministic DDIM trajectory.  Works for both SDXL and SD1.x via
 the ModelContext abstraction.
 
 The ``inv_step`` math is adapted from the Tight Inversion HuggingFace
-Space scheduler (see EXTERNAL_SOURCES.md).
+Space scheduler (see the "Origin" section of the task README).
 """
 
 from __future__ import annotations

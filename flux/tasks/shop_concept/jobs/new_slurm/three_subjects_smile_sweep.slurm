@@ -12,16 +12,17 @@
 # =============================================================================
 # three_subjects_smile_sweep.slurm
 # =============================================================================
-# Genera 3 immagini con shop_concept (Flux + multi-LoRA per-soggetto) usando
-# lo stesso slider "smile" con scale diverse per ognuno dei 3 soggetti.
+# Generate 3 images with the mask-aware pipeline (Flux + per-subject
+# multi-LoRA) using the same smile slider with different scales for each
+# of the 3 subjects.
 #
-# Prompt: scena con 3 soggetti che guardano di fronte (uomo / donna / bambino).
+# Prompt: scene with 3 subjects facing the camera (man / woman / child).
 # Slider: smile_flux_v5_symmetric (rank=16, xattn, alpha=1).
 #
-# 3 immagini:
-#   1. baseline_zero      → scales: man=0   woman=0   child=0   (slider OFF ovunque)
-#   2. minus1_zero_plus1  → scales: man=-1  woman=0   child=+1  (uno serio, uno neutro, uno sorride)
-#   3. minus2_zero_minus2 → scales: man=-2  woman=0   child=-2  (primo+terzo molto seri)
+# 3 images:
+#   1. baseline_zero      -> scales: man=0   woman=0   child=0   (slider OFF everywhere)
+#   2. minus1_zero_plus1  -> scales: man=-1  woman=0   child=+1  (one serious, one neutral, one smiling)
+#   3. minus2_zero_minus2 -> scales: man=-2  woman=0   child=-2  (first and third heavily serious)
 # =============================================================================
 
 set -euo pipefail
@@ -39,20 +40,20 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri condivisi
+# Shared parameters
 # -----------------------------------------------------------------------------
-# Path al checkpoint finale dello slider (training completato).
-# Per testare i checkpoint intermedi sostituisci con uno tra:
+# Path to the final slider checkpoint (training completed).
+# To test intermediate checkpoints replace with one of:
 #   .../flux-smile_flux_v5_symmetric_step100/slider_0.pt   (early)
 #   .../flux-smile_flux_v5_symmetric_step200/slider_0.pt
 #   .../flux-smile_flux_v5_symmetric_step300/slider_0.pt
 #   .../flux-smile_flux_v5_symmetric_step400/slider_0.pt   (late)
 SLIDER="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 
-# Prompt principale (i 3 target devono esserne sottostringhe letterali)
+# Main prompt (the 3 targets must be literal substrings)
 PROMPT="a photograph of a man, a woman, and a child standing side by side, looking at the camera, in a sunny park with trees and grass in the background, natural light, sharp focus, high detail"
 
-# Sottostringhe del prompt che identificano i 3 soggetti
+# Prompt substrings identifying the 3 subjects.
 TARGETS=(man woman child)
 
 SEED=42
@@ -75,7 +76,7 @@ echo "out_dir : $OUT_DIR"
 echo ""
 
 # -----------------------------------------------------------------------------
-# Funzione helper: lancia 1 generazione con 3 scale (una per soggetto)
+# Helper function: launches one generation with 3 scale (one per subject)
 # -----------------------------------------------------------------------------
 run_one() {
     local NAME="$1"
@@ -101,7 +102,7 @@ run_one() {
 }
 
 # -----------------------------------------------------------------------------
-# Le 3 generazioni
+# The 3 generations
 # -----------------------------------------------------------------------------
 run_one "01_baseline_zero"        0   0   0
 run_one "02_minus1_zero_plus1"   -1   0   1

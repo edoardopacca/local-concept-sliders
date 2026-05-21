@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=p3_edo_smile_f
-#SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
 #SBATCH --gpus=1
@@ -10,7 +9,7 @@
 #SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
 #SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
-# Phase 3 masked LoRA — smile_f (federico_v2) × 20 run — Edoardo
+# Phase 3 masked LoRA — smile_f (federico_v2) × 20 run 
 # scales: 1, 2, 3
 
 set -euo pipefail

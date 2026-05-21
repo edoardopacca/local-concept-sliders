@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-choose_masks.py — carica SAM una volta, poi per ogni run dir fa 2 click
-interattivi, mostra le due maschere a confronto e chiede quale tenere.
+choose_masks.py — load SAM once, then for each run dir collect 2 clicks
+interactively, show the two candidate masks side by side and ask which one to keep.
 
 Uso:
   python mask_SAM/choose_masks.py \
@@ -40,7 +40,7 @@ def pick_point(image_np: np.ndarray, title: str) -> tuple:
     selected = plt.ginput(1, timeout=0)
     plt.close(fig)
     if not selected:
-        raise RuntimeError("Nessun punto selezionato.")
+        raise RuntimeError("No point selected.")
     x, y = selected[0]
     return int(round(x)), int(round(y))
 
@@ -84,13 +84,13 @@ def show_comparison(
 
 
 def do_two_clicks(predictor, image_np: np.ndarray, run_id: str):
-    print("  Click 1: clicca sul target, poi chiudi la finestra")
-    pt1 = pick_point(image_np, f"{run_id} — Click 1  (chiudi dopo)")
+    print("  Click 1: click on the target, then close the window")
+    pt1 = pick_point(image_np, f"{run_id} — Click 1  (close when done)")
     mask1 = get_mask(predictor, pt1)
     print(f"     punto: {pt1}")
 
-    print("  Click 2: clicca in un altro punto, poi chiudi la finestra")
-    pt2 = pick_point(image_np, f"{run_id} — Click 2  (chiudi dopo)")
+    print("  Click 2: click on another point, then close the window")
+    pt2 = pick_point(image_np, f"{run_id} — Click 2  (close when done)")
     mask2 = get_mask(predictor, pt2)
     print(f"     punto: {pt2}")
 
@@ -100,9 +100,9 @@ def do_two_clicks(predictor, image_np: np.ndarray, run_id: str):
 def main() -> None:
     args = build_parser().parse_args()
 
-    print(f"Carico SAM da {args.sam_checkpoint} ...")
+    print(f"Loading SAM from {args.sam_checkpoint} ...")
     predictor = load_sam(args.sam_checkpoint, args.sam_model_type)
-    print("SAM caricato.\n")
+    print("SAM loaded.\n")
 
     total = len(args.run_ids)
     for idx, run_id in enumerate(args.run_ids, 1):
@@ -112,7 +112,7 @@ def main() -> None:
         print(f"\n[{idx}/{total}] === {run_id} ===")
 
         if not image_path.exists():
-            print(f"  [SKIP] base.png non trovato in {run_dir}")
+            print(f"  [SKIP] base.png not found in {run_dir}")
             continue
 
         image_np = np.array(Image.open(image_path).convert("RGB"))
@@ -121,10 +121,10 @@ def main() -> None:
         mask1, mask2 = do_two_clicks(predictor, image_np, run_id)
 
         while True:
-            print("  Apro le due maschere in Preview...")
+            print("  Opening the two masks in Preview...")
             show_comparison(image_np, mask1, mask2, run_dir)
 
-            choice = input("  Scegli [1 / 2 / r=ripeti i click]: ").strip().lower()
+            choice = input("  Choose [1 / 2 / r=repeat clicks]: ").strip().lower()
             if choice == "1":
                 chosen = mask1
                 break
@@ -134,15 +134,15 @@ def main() -> None:
             elif choice == "r":
                 mask1, mask2 = do_two_clicks(predictor, image_np, run_id)
             else:
-                print("  Digita 1, 2, oppure r.")
+                print("  Type 1, 2 or r.")
 
         out = run_dir / "mask_target.png"
         Image.fromarray(chosen.astype(np.uint8) * 255).save(out)
         for tmp in (run_dir / "_mask_v1_preview.png", run_dir / "_mask_v2_preview.png"):
             tmp.unlink(missing_ok=True)
-        print(f"  [OK] salvata → {out}")
+        print(f"  [OK] saved -> {out}")
 
-    print("\n=== FATTO: tutte le maschere salvate ===")
+    print("\n=== DONE: all masks saved ===")
 
 
 if __name__ == "__main__":

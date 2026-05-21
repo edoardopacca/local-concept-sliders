@@ -14,7 +14,7 @@
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione daynight.
 #
-# Slider usato in fase 3: daynight_sdxl_v1, scala 3.0 (ottimale per il concept).
+# Slider used in phase 3: daynight_sdxl_v1, scale 3.0 (optimal for the concept).
 # Tutti i paesaggi hanno cielo visibile → facile da selezionare con SAM in fase 2.
 # Mask target in fase 2: regione del CIELO.
 #
@@ -98,7 +98,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_daynight                        ==="
+echo "=== FASE 1 COMPLETED: eval_daynight                        ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_daynight_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_daynight_* | wc -l)"

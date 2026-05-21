@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Override run-dir prefix (default: eval_{concept}_)")
     p.add_argument("--edit_prefix", type=str, default=None,
                    help="Override edited image prefix (default: from CONCEPT_EDIT_PREFIX). "
-                        "Use to distinguish trial vs federico results, e.g. age_t or age_f.")
+                        "Use to distinguish edit variants on the same concept (e.g. age_t vs age_f).")
     p.add_argument("--scales", type=float, nargs="+", default=None,
                    help="Restrict evaluation to these specific scales (e.g. --scales 5 6 8). "
                         "Default: auto-discover from edited image filenames.")

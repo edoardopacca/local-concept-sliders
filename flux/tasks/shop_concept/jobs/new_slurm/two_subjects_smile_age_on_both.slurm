@@ -10,32 +10,29 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# two_subjects_smile_age_on_both.slurm
-# =============================================================================
-# 2 slider (smile, age) applicati a 2 soggetti (man, woman), composizione
-# paper-style (Concept Sliders Metodo 2 / ExitStack via PEFT multi-adapter).
+# 2 sliders (smile, age) applied to 2 subjects (man, woman). Compositional
+# aggregation realised by loading every slider twice as a distinct PEFT
+# adapter (once per region), so the same concept (e.g. smile) can take a
+# different sign or intensity on each subject (e.g. +2 on the man, -2 on
+# the woman).
 #
-# Ogni slider e' caricato 2 volte come adapter PEFT distinto, una per
-# regione. Cosi' lo stesso concept (es. smile) puo' avere scale di segno/
-# intensita' diverse sui due soggetti (es. +2 sul man, -2 sulla woman).
-#
-#   Slider PEFT (load order):                        slider_to_target:
-#     0 = smile (su man)                                0
-#     1 = age   (su man)                                0
-#     2 = smile (su woman)                              1
-#     3 = age   (su woman)                              1
+#   PEFT adapters (load order):                       slider_to_target:
+#     0 = smile (on man)                                0
+#     1 = age   (on man)                                0
+#     2 = smile (on woman)                              1
+#     3 = age   (on woman)                              1
 #
 #   target_prompt:  man  woman
 #                    0     1
 #
-# Per ogni regione i 2 slider vengono SOMMATI additivamente:
+# Inside each region the 2 sliders are SUMMED additively:
 #   region_man   <- baseline + s_smile_man  * Delta_smile + s_age_man  * Delta_age
 #   region_woman <- baseline + s_smile_wom  * Delta_smile + s_age_wom  * Delta_age
 #
-# 3 run (s_smile_man, s_age_man, s_smile_woman, s_age_woman):
-#   01_all_zero.png         -> 0  0  0  0    (baseline pulita, niente LoRA)
-#   02_pos_man_neg_woman.png-> 1  1 -1 -1    (uomo +smile +age, donna -smile -age)
-#   03_extreme.png          -> 2  2 -2 -2    (estremi)
+# 3 runs (s_smile_man, s_age_man, s_smile_woman, s_age_woman):
+#   01_all_zero.png         -> 0  0  0  0    (clean baseline, no LoRA)
+#   02_pos_man_neg_woman.png-> 1  1 -1 -1    (man +smile +age, woman -smile -age)
+#   03_extreme.png          -> 2  2 -2 -2    (extremes)
 # =============================================================================
 
 set -euo pipefail
@@ -53,18 +50,18 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER_SMILE="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 SLIDER_AGE="flux/trained_sliders/sliders/age_flux_v1_symmetric_rank16_xattn_alpha1/flux-age_flux_v1_symmetric/slider_0.pt"
 
 PROMPT="a man and a woman facing the camera, studio portrait, neutral expression"
 
-# 2 regioni
+# 2 regions.
 TARGETS=(man woman)
 
-# 4 adapter PEFT: smile e age caricati 2 volte (una per regione).
-# Ordine == slider_to_target: [smile@man, age@man, smile@woman, age@woman].
+# 4 PEFT adapters: smile and age loaded twice each (once per region).
+# Order matches slider_to_target: [smile@man, age@man, smile@woman, age@woman].
 SLIDERS=("$SLIDER_SMILE" "$SLIDER_AGE" "$SLIDER_SMILE" "$SLIDER_AGE")
 SLIDER_TO_TARGET=(0 0 1 1)
 
@@ -79,7 +76,7 @@ WIDTH=512
 GUIDANCE=3.5
 
 echo "================================================="
-echo "=== shop_concept: 2 slider COMPOSTI x 2 target ==="
+echo "=== shop_concept: 2 composed sliders x 2 targets ==="
 echo "================================================="
 echo "prompt          : $PROMPT"
 echo "targets         : ${TARGETS[*]}"

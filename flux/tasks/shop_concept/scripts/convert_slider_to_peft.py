@@ -1,34 +1,33 @@
 """
-shop_concept/convert_slider_to_peft.py
-=======================================
-Converte un Concept Slider (.pt salvato da LoRANetwork.save_weights) nel
-formato PEFT safetensors atteso da LoRAShop.
+Convert a Concept Slider (.pt saved by ``LoRANetwork.save_weights``) into
+the PEFT-format safetensors expected by the LoRAShop-style pipeline.
 
-Formato sorgente (slider_{i}.pt, kohya-ss / LoRANetwork):
+Source format (slider_{i}.pt, kohya-ss / LoRANetwork):
     lora_unet_<flat_dotted_path>.lora_down.weight   shape (rank, in_dim)
     lora_unet_<flat_dotted_path>.lora_up.weight     shape (out_dim, rank)
     lora_unet_<flat_dotted_path>.alpha              scalar buffer
 
-dove <flat_dotted_path> = module_path.replace('.', '_')
-    es. "transformer_blocks_0_attn_to_q"
-        "transformer_blocks.0.attn.to_q" e' il path originale
+where ``<flat_dotted_path> = module_path.replace('.', '_')``, e.g.
+``transformer_blocks_0_attn_to_q`` is the flat form of
+``transformer_blocks.0.attn.to_q``.
 
-Nel training flux_slider.py il multiplier finale del LoRA vale:
+In the original training script the LoRA contribution is applied as
     out = org(x) + lora_up(lora_down(x)) * multiplier * (alpha / rank)
 
-Formato destinazione (PEFT diffusers safetensors):
-    transformer.<dotted_path>.lora_A.weight   shape (rank, in_dim)  <- ex lora_down
-    transformer.<dotted_path>.lora_B.weight   shape (out_dim, rank) <- ex lora_up * (alpha/rank)
+Target format (PEFT diffusers safetensors):
+    transformer.<dotted_path>.lora_A.weight   shape (rank, in_dim)  <- former lora_down
+    transformer.<dotted_path>.lora_B.weight   shape (out_dim, rank) <- former lora_up * (alpha/rank)
 
-Scelte:
-  * Alpha e' FOLDATO dentro lora_B moltiplicando lora_up per (alpha/rank).
-    Cosi' PEFT scaling resta 1.0 di default e il parametro `--lora_scale`
-    continuo dello slider e' moltiplicato esplicitamente sopra. Questo
-    semplifica molto la logica per-target in flux_blocks.py.
+Design choices:
 
-  * Enumeriamo staticamente i 266 moduli LoRA attesi dal training
-    `train_method='xattn'` su Flux 1.0 (19 double blocks x 8 linear attn
-    + 38 single blocks x 3 linear attn). Nessun bisogno di caricare Flux.
+  * ``alpha`` is FOLDED into lora_B by multiplying lora_up by
+    ``(alpha / rank)``. This keeps PEFT's default scaling at 1.0 and lets
+    the pipeline apply the continuous slider scale explicitly on top,
+    which simplifies the per-target logic in `flux_blocks.py`.
+  * The list of LoRA modules is enumerated statically: Flux 1.0 with
+    ``train_method='xattn'`` produces 266 linear modules (19 double
+    blocks x 8 attention linears + 38 single blocks x 3 attention
+    linears). Flux itself does not need to be loaded.
 """
 
 from __future__ import annotations
@@ -43,9 +42,9 @@ import torch
 from safetensors.torch import save_file
 
 
-# Leaf-names di moduli Linear sotto "attn" per un blocco Flux.
-# Questi derivano dalla class diffusers.FluxAttention (e dalla variante
-# SingleTransformerBlock che ha solo Q/K/V di base).
+# Leaf names of the Linear modules under "attn" inside a Flux block.
+# Derived from diffusers.FluxAttention (and from the SingleTransformerBlock
+# variant, which only has Q/K/V).
 _DOUBLE_BLOCK_ATTN_LEAVES: Tuple[str, ...] = (
     "to_q",
     "to_k",
@@ -62,7 +61,7 @@ _SINGLE_BLOCK_ATTN_LEAVES: Tuple[str, ...] = (
     "to_v",
 )
 
-# Numero di blocchi nell'architettura Flux 1.0 / 1.0-dev.
+# Number of blocks in the Flux 1.0 / 1.0-dev architecture.
 _NUM_DOUBLE_BLOCKS_FLUX1 = 19
 _NUM_SINGLE_BLOCKS_FLUX1 = 38
 
@@ -71,13 +70,12 @@ def build_flux_lora_target_map(
     num_double_blocks: int = _NUM_DOUBLE_BLOCKS_FLUX1,
     num_single_blocks: int = _NUM_SINGLE_BLOCKS_FLUX1,
 ) -> Dict[str, str]:
-    """
-    Costruisce la mappa
-        {kohya_flat_name -> dotted_path}
-    per TUTTI i Linear target di un LoRANetwork addestrato con
-    `train_method='xattn'` su Flux 1.0.
+    """Build the
+        ``{kohya_flat_name -> dotted_path}``
+    map covering every Linear targeted by a ``LoRANetwork`` trained with
+    ``train_method='xattn'`` on Flux 1.0.
 
-    Esempio:
+    Example::
         'lora_unet_transformer_blocks_0_attn_to_q'
             -> 'transformer_blocks.0.attn.to_q'
         'lora_unet_transformer_blocks_0_attn_to_out_0'
@@ -110,25 +108,24 @@ def convert_slider_state_dict(
     num_double_blocks: int = _NUM_DOUBLE_BLOCKS_FLUX1,
     num_single_blocks: int = _NUM_SINGLE_BLOCKS_FLUX1,
 ) -> Tuple[Dict[str, torch.Tensor], Dict[str, str]]:
-    """
-    Converte lo state_dict di un Concept Slider nel formato PEFT per Flux.
+    """Convert the state dict of a Concept Slider into the Flux PEFT format.
 
-    Ritorna:
-        (converted_state_dict, metadata_dict)
+    Returns:
+        ``(converted_state_dict, metadata_dict)``
 
-    Se `fold_alpha=True`: lora_B viene moltiplicato per (alpha/rank) e i
-    tensor alpha vengono scartati.
-    Se `fold_alpha=False`: lora_A, lora_B, alpha vengono tutti preservati
-    (utile se vuoi che PEFT gestisca l'alpha in autonomia; non testato).
+    If ``fold_alpha=True`` (default): ``lora_B`` is multiplied by
+    ``alpha / rank`` and the alpha tensors are discarded.
+    If ``fold_alpha=False``: ``lora_A``, ``lora_B`` and ``alpha`` are all
+    preserved (useful if PEFT is left to handle alpha by itself; untested).
     """
     flat_to_dotted = build_flux_lora_target_map(num_double_blocks, num_single_blocks)
 
-    # Raggruppa le chiavi per modulo kohya-flat
+    # Group source keys by kohya-flat module name.
     modules: Dict[str, Dict[str, torch.Tensor]] = {}
     for key, tensor in state_dict.items():
         if "." not in key:
             if strict:
-                raise ValueError(f"Chiave senza punto non attesa: {key}")
+                raise ValueError(f"Unexpected key without a dot separator: {key}")
             continue
         flat_name, subkey = key.split(".", 1)
         modules.setdefault(flat_name, {})[subkey] = tensor
@@ -152,13 +149,13 @@ def convert_slider_state_dict(
 
         if lora_down is None or lora_up is None:
             raise ValueError(
-                f"Modulo {flat_name} privo di lora_down.weight o lora_up.weight "
-                f"(chiavi trovate: {list(parts.keys())})"
+                f"Module {flat_name} is missing lora_down.weight or "
+                f"lora_up.weight (keys found: {list(parts.keys())})"
             )
 
         rank = lora_down.shape[0]
         if alpha_tensor is None:
-            alpha_val = float(rank)  # default kohya: alpha=rank -> scale=1
+            alpha_val = float(rank)  # kohya default: alpha == rank → scale = 1
         else:
             alpha_val = float(alpha_tensor.detach().cpu().item())
         alphas_summary[flat_name] = alpha_val
@@ -180,12 +177,12 @@ def convert_slider_state_dict(
 
     if unmatched and strict:
         raise ValueError(
-            f"{len(unmatched)} modulo/i non mappato/i (es. {unmatched[:3]}). "
-            f"Il checkpoint ha una forma architetturale inattesa "
-            f"(non Flux 1.0 xattn?)."
+            f"{len(unmatched)} module(s) could not be mapped "
+            f"(e.g. {unmatched[:3]}). The checkpoint has an unexpected "
+            f"architectural shape (not Flux 1.0 xattn?)."
         )
 
-    # Uniforma tutti i tensori in bfloat16 per compatibilita' con Flux pipeline
+    # Cast every tensor to bfloat16 for compatibility with the Flux pipeline.
     for k in list(converted.keys()):
         converted[k] = converted[k].to(torch.bfloat16).contiguous()
 
@@ -205,13 +202,13 @@ def convert_slider_file(
     fold_alpha: bool = True,
     strict: bool = True,
 ) -> None:
-    """Load un .pt slider, converte, salva .safetensors PEFT."""
+    """Load a .pt slider, convert it, and save the PEFT .safetensors."""
     print(f"[convert] loading {input_path}")
     state_dict = torch.load(input_path, map_location="cpu")
     if not isinstance(state_dict, dict):
         raise TypeError(
-            f"Atteso dict da torch.load, ottenuto {type(state_dict)}. "
-            f"E' sicuro un checkpoint di LoRANetwork.save_weights()?"
+            f"Expected dict from torch.load, got {type(state_dict)}. "
+            f"Is this really a LoRANetwork.save_weights() checkpoint?"
         )
 
     converted, metadata = convert_slider_state_dict(
@@ -222,42 +219,42 @@ def convert_slider_file(
     save_file(converted, output_path, metadata=metadata)
     print(
         f"[convert] wrote {output_path}  "
-        f"({metadata['num_modules']} moduli, "
+        f"({metadata['num_modules']} modules, "
         f"alpha_folded={metadata['alpha_folded_into_lora_B']})"
     )
 
 
 def _main():
     parser = argparse.ArgumentParser(
-        description="Converte slider_X.pt (LoRANetwork) -> PEFT safetensors"
+        description="Convert slider_X.pt (LoRANetwork) into PEFT safetensors."
     )
     parser.add_argument(
         "--input",
         type=str,
         required=True,
-        help="Path al file .pt del concept slider (slider_0.pt tipico).",
+        help="Path to the .pt Concept Slider checkpoint (typically slider_0.pt).",
     )
     parser.add_argument(
         "--output",
         type=str,
         required=True,
-        help="Path di destinazione (.safetensors).",
+        help="Destination path (.safetensors).",
     )
     parser.add_argument(
         "--no_fold_alpha",
         action="store_true",
-        help="Se passato, non folda alpha/rank dentro lora_B. "
-             "Sconsigliato: LoRAShop non legge alpha separati.",
+        help="Skip folding alpha/rank into lora_B. Discouraged: the "
+             "mask-aware pipeline does not read separate alpha tensors.",
     )
     parser.add_argument(
         "--lax",
         action="store_true",
-        help="Consenti chiavi non mappate (warning invece di errore).",
+        help="Allow unmapped keys (warning instead of error).",
     )
     args = parser.parse_args()
 
     if not args.output.endswith(".safetensors"):
-        raise ValueError("--output deve terminare con .safetensors")
+        raise ValueError("--output must end with .safetensors")
 
     convert_slider_file(
         input_path=args.input,

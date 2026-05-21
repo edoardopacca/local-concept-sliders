@@ -14,19 +14,19 @@
 # =============================================================================
 # FASE 3 — Applica il masked LoRA smile su tutte e 20 le run.
 #
-# Prerequisiti: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
+# Requirements: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
 #
 # Slider: smile_person_sdxl_v1_alpha1.0_rank4_noxattn  (generale)
 # Scale testate: 1.5  2.0  3.0
 #
-# FASE 2 — Come creare le maschere (eseguire in locale):
+# Phase 2 — produce the masks locally:
 #   Per ogni eval_smile_person_{NN}:
 #     python mask_SAM/segment_with_sam.py \
 #       --image_path sdxl/tasks/masked_lora/runs/eval_smile_person_NN/base.png \
 #       --output_dir sdxl/tasks/masked_lora/runs/eval_smile_person_NN \
 #       --mode interactive
 #   Cliccare sul VISO del soggetto da editare (qualunque persona).
-#   Nota: smile è il concept con localizzazione più difficile — la maschera
+#   Note: smile is the hardest concept to localise — the mask
 #   deve coprire bene la zona bocca/basso viso.
 # =============================================================================
 
@@ -85,7 +85,7 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_smile_person                    ==="
+echo "=== FASE 3 COMPLETED: eval_smile_person                    ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept smile_person --device cuda"

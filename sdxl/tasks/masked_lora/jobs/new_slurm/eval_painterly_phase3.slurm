@@ -14,12 +14,12 @@
 # =============================================================================
 # FASE 3 — Applica il masked LoRA painterly su tutte e 20 le run.
 #
-# Prerequisiti: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
+# Requirements: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
 #
 # Slider: painterly_sdxl_v1_alpha1.0_rank4_noxattn
 # Scale testate: 1.5  2.0  3.0
 #
-# FASE 2 — Come creare le maschere (eseguire in locale):
+# Phase 2 — produce the masks locally:
 #   Per ogni eval_painterly_{NN}:
 #     python mask_SAM/segment_with_sam.py \
 #       --image_path sdxl/tasks/masked_lora/runs/eval_painterly_NN/base.png \
@@ -28,7 +28,7 @@
 #   Cliccare sul SOGGETTO PRINCIPALE in primo piano:
 #     es. edificio, barca, mulino, faro, cascata, albero, ecc.
 #   Lo sfondo (cielo, acqua, prato) rimane fotorealistico.
-#   La maschera deve coprire il soggetto in modo pulito, non lo sfondo.
+#   The mask must cleanly cover the subject, not the background.
 # =============================================================================
 
 set -euo pipefail
@@ -86,7 +86,7 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_painterly                       ==="
+echo "=== FASE 3 COMPLETED: eval_painterly                       ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept painterly --device cuda"

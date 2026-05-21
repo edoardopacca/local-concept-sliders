@@ -13,13 +13,20 @@
 # =============================================================================
 # test_scale_rebe.slurm
 # =============================================================================
-# Test scale sweep — 1 run per concept — per Rebe (furlength, smile).
+# Test scale sweep — 1 run per concept (furlength, smile).
 #
-# Pesi richiesti (metti in $FERT_REPO):
-#   Edoardo (trial_v1):
+# NOTE: the furlength variants below point at `furlength_dog_flux_v1`, a
+# subject-specific slider whose training prompt YAML has been removed
+# from the repository; the smile variants and the federico_v2 sliders
+# point at general weights that may or may not be present in the local
+# tree. Repointing the furlength lines at the general `furlength_pet`
+# slider would be a one-line code edit per concept.
+#
+# Weight paths (place inside $FERT_REPO):
+#   (trial_v1 config):
 #     flux/trained_sliders/sliders/trial_v1/furlength_dog_flux_v1/flux-furlength_dog_flux_v1/slider_0.pt
 #     flux/trained_sliders/sliders/trial_v1/smile_person_flux_v1/flux-smile_person_flux_v1/slider_0.pt
-#   Fede (federico_v2):
+#   federico_v2:
 #     flux/trained_sliders/sliders/federico_v2/flux-fur_flux_v2_custom/slider_0.pt
 #     flux/trained_sliders/sliders/federico_v2/flux-smile_flux_v2_custom/slider_0.pt
 #
@@ -103,7 +110,7 @@ test_one "smile_person" "${F_ROOT}/flux-smile_flux_v2_custom/slider_0.pt" \
     "smile_f" "1 2 3"
 
 echo "================================================================"
-echo "=== TEST SCALE REBE COMPLETATO                              ==="
+echo "=== TEST SCALE REBE COMPLETED                              ==="
 echo "  runs/eval_furlength_01/    : furlength_t s1,2,3 | furlength_f s2,3,5,7"
 echo "  runs/eval_smile_person_01/ : smile_t s1,1.5,2   | smile_f s1,2,3"
 echo "================================================================"

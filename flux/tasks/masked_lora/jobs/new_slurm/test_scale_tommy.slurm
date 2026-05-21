@@ -13,10 +13,10 @@
 # =============================================================================
 # test_scale_tommy.slurm
 # =============================================================================
-# Test scale sweep — 1 run per concept — per Tommy (age, curlyhair, painterly).
+# Test scale sweep — 1 run per concept — (custom config) (age, curlyhair, painterly).
 #
 # Pesi richiesti (metti in $FERT_REPO):
-#   Edoardo (trial_v1):
+#   (trial_v1 config):
 #     flux/trained_sliders/sliders/trial_v1/age_person_flux_v1/flux-age_person_flux_v1/slider_0.pt
 #     flux/trained_sliders/sliders/trial_v1/curlyhair_person_flux_v1/flux-curlyhair_person_flux_v1/slider_0.pt
 #     flux/trained_sliders/sliders/trial_v1/painterly_flux_v1/flux-painterly_flux_v1/slider_0.pt
@@ -109,7 +109,7 @@ test_one "painterly" "${F_ROOT}/flux-pittoric_style_flux_v2_custom/slider_0.pt" 
     "painterly_f" "6 8 10"
 
 echo "================================================================"
-echo "=== TEST SCALE TOMMY COMPLETATO                             ==="
+echo "=== TEST SCALE TOMMY COMPLETED                             ==="
 echo "  runs/eval_age_person_01/   : age_t s0.5,0.7,1 | age_f s0.5,1,1.5"
 echo "  runs/eval_curlyhair_01/    : curly_t s0.5,0.8,1"
 echo "  runs/eval_painterly_01/    : painterly_t s1,1.5,2 | painterly_f s6,8,10"

@@ -1,26 +1,24 @@
 #!/usr/bin/env python
 # =============================================================================
-# generate_flux.py
-# =============================================================================
-# Generazione immagini con Flux.1-dev (senza slider, modello base).
+# Generate images with Flux.1-dev (no slider, base model only).
 #
-# Usa diffusers.FluxPipeline ufficiale, bf16, Flux.1-dev default params
-# (30 step, guidance 3.5). Usa gli stessi path HF cache del training.
+# Uses the official diffusers FluxPipeline, bf16, with the Flux.1-dev
+# default parameters (30 steps, guidance 3.5). The HF cache path follows
+# the training environment.
 #
-# Uso:
+# Usage:
 #   python generate_flux.py \
 #       --prompt "a smiling man next to a serious woman" \
 #       --save_dir ../outputs/generations/smile_serious \
 #       --seeds 42 7 2026 \
 #       --steps 30
 #
-# Con piu' prompts (passa piu' volte --prompt):
+# Multiple prompts (pass --prompt several times):
 #   python generate_flux.py \
 #       --prompt "a smiling man" --prompt "a serious woman" \
 #       --prompt "a smiling man and a serious woman" \
 #       --save_dir ../outputs/generations/test \
 #       --seeds 42 7
-#
 # =============================================================================
 
 import os
@@ -35,12 +33,12 @@ def parse_args():
     p.add_argument("--pretrained_model_name_or_path",
                    default="black-forest-labs/FLUX.1-dev")
     p.add_argument("--prompt", action="append", required=True,
-                   help="Prompt di generazione. Passa piu' --prompt per multi-prompt.")
+                   help="Generation prompt. Pass --prompt several times for multi-prompt mode.")
     p.add_argument("--seeds", type=int, nargs="+", default=[42],
-                   help="Lista di seed: un'immagine per (prompt, seed).")
+                   help="Seed list: one image per (prompt, seed).")
     p.add_argument("--save_dir", required=True)
     p.add_argument("--height", type=int, default=1024,
-                   help="Flux.1-dev nativo e' 1024; 512 per velocita'")
+                   help="Flux.1-dev native resolution is 1024; use 512 for speed.")
     p.add_argument("--width", type=int, default=1024)
     p.add_argument("--steps", type=int, default=30)
     p.add_argument("--guidance_scale", type=float, default=3.5)

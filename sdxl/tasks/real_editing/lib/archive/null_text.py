@@ -7,7 +7,7 @@ For SD1.4 this is a well-tested, proven implementation.
 For SDXL the same optimisation principle is applied to the larger
 uncond embedding tensor; this path is marked **experimental**.
 
-See EXTERNAL_SOURCES.md.
+See the "Origin" section of the task README.
 """
 
 from __future__ import annotations

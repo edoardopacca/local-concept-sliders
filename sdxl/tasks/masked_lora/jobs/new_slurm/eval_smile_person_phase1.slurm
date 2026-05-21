@@ -12,10 +12,11 @@
 # =============================================================================
 # eval_smile_person_phase1.slurm
 # =============================================================================
-# FASE 1 — Genera 20 immagini base per il set di valutazione smile_person.
-#
-# Slider usato in fase 3: smile_woman_sdxl_v1 (gender-specific).
-# Stessi 20 prompt e semi di eval_age_person e eval_curlyhair.
+# PHASE 1 — Generate the 20 base images for the smile_person evaluation
+# set. Phase 3 will apply the general smile slider (smile_person) to
+# each base image inside an externally-provided mask (§4 of the paper).
+# Same 20 prompts and seeds as eval_age_person and eval_curlyhair so
+# that the three concepts share an identical base set.
 #
 # Output: sdxl/tasks/masked_lora/runs/eval_smile_person_{01..20}/
 # =============================================================================
@@ -97,7 +98,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_smile_person                    ==="
+echo "=== FASE 1 COMPLETED: eval_smile_person                    ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_smile_person_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_smile_person_* | wc -l)"

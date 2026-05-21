@@ -13,7 +13,7 @@
 # eval_age_person_phase1.slurm  (Flux)
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione age_person.
-# Stessi prompt e semi del corrispettivo SDXL per comparabilità.
+# Same prompts and seeds as the SDXL counterpart for comparability.
 # Fase 2 (SAM) in locale: cliccare sul viso di una qualsiasi donna.
 #
 # Output: flux/tasks/masked_lora/runs/eval_age_person_{01..20}/
@@ -95,7 +95,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_age_person Flux                 ==="
+echo "=== FASE 1 COMPLETED: eval_age_person Flux                 ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_age_person_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_age_person_* | wc -l)"

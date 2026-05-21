@@ -1,15 +1,26 @@
-# shop_concept/flux_real_pipeline.py
-# ---------------------------------------------------------------------------
-# Derivato da LoRAShop-main/flux_real_pipeline.py.
+# Adapted from LoRAShop (gemlab-vt/LoRAShop, MIT), which itself adapts the
+# diffusers Flux pipeline. The upstream pipeline is left functionally
+# intact; the additions specific to this project are:
 #
-# DIFF RISPETTO ALL'ORIGINALE (vedi CHANGES.md per dettagli):
-#   * Import riscritti in relativi (`from .utils`, `from .flux_blocks`).
-#   * `__call__` accetta un nuovo kwarg `target_lora_scales` che viene
-#     iniettato in `joint_attention_kwargs["target_lora_scales"]`, letto
-#     da flux_blocks.TransformerBlock.set_adapter per applicare la scale
-#     continua del concept slider per-target.
+#   * `__call__` accepts two new keyword arguments:
+#       - `target_lora_scales`: one continuous slider scale per loaded
+#         adapter, propagated to the patched transformer blocks via
+#         `joint_attention_kwargs["target_lora_scales"]`. Replaces the
+#         upstream toggle-on/toggle-off behaviour.
+#       - `slider_to_target`: mapping from adapter index to target index,
+#         used to allow several adapters to be active inside the same
+#         masked region (the compositional aggregation described in
+#         Appendix D of the paper, the LoRAShop-style adaptation with
+#         internal masks). The inverse mapping is stored as
+#         `joint_attention_kwargs["target_to_sliders"]`.
+#   * `__call__` accepts an optional `mask_dump_path`: when set, the soft
+#     and segmentation masks computed during the prior-extraction phase are
+#     written to disk as PNG, one pair per target. Used for the
+#     qualitative example shown in fig:appendix:internal-masks of the
+#     paper.
+#   * Imports are relative so the module is callable both as
+#     `python -m flux.tasks.shop_concept.scripts.generate` and as a script.
 # ---------------------------------------------------------------------------
-# Adapted from https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines/flux/pipeline_flux.py
 import os
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -635,22 +646,24 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
         invert: bool = False,
         latent_image_ids: Optional[torch.FloatTensor] = None,
         edit_start_step: int = 8,
-        # shop_concept: scale per-slider del Concept Slider (continuo).
-        # Lunghezza attesa == numero di slider caricati (== num_targets se
-        # slider_to_target=None, == arbitrario altrimenti).
-        # Se None, default a tutti 1.0 (equivalente a LoRAShop originale).
+        # Continuous per-slider scale. Length must match the number of
+        # loaded adapters (equal to the number of targets when
+        # `slider_to_target` is None, arbitrary otherwise). If left as
+        # None, every adapter behaves as in upstream LoRAShop (scaling 1).
         target_lora_scales: Optional[List[float]] = None,
-        # shop_concept multi-LoRA: mappa slider_idx -> target_idx.
-        # `slider_to_target[i] = j` significa "slider i va applicato sulla
-        # regione mascherata dal target_prompt[j]". Se None, default a
-        # identita' (1 slider per target). Se piu' slider mappano allo
-        # stesso target, le loro delta vengono SOMMATE additivamente
-        # (composizionalita' Concept Sliders Metodo 2 / ExitStack via
-        # multi-adapter PEFT) dentro la stessa regione mascherata.
+        # Mapping from slider index to target index:
+        # `slider_to_target[i] = j` means "slider i is applied inside the
+        # region matched by target_prompt[j]". If None, the identity
+        # mapping is used (one slider per target). When several sliders
+        # map to the same target, PEFT sums their deltas additively, which
+        # is the compositional aggregation described in Appendix D of the
+        # paper (the LoRAShop-style adaptation with internal masks).
         slider_to_target: Optional[List[int]] = None,
-        # shop_concept: se settato (es. "out/seed42_scale1.0_mask"), salva
-        # PNG delle maschere (soft + binary) usate per il blend, una per
-        # ogni target_prompt. Suffissi: _target{i}_soft.png, _target{i}_seg.png.
+        # If set (e.g. "out/seed42_scale1.0_mask"), write the masks used
+        # for blending to disk as PNG, one pair per target_prompt. The
+        # files are named `{path}_target{i}_soft.png` and
+        # `{path}_target{i}_seg.png`. Used to produce the qualitative
+        # example shown in fig:appendix:internal-masks of the paper.
         mask_dump_path: Optional[str] = None,
     ):
 
@@ -660,11 +673,12 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
 
         joint_attention_kwargs["target_token_idxs"] = target_token_idxs
 
-        # shop_concept: propaga target_lora_scales + mapping slider->target.
+        # Propagate target_lora_scales and build the target->sliders mapping
+        # that the patched transformer blocks read from joint_attention_kwargs.
         num_targets = len(target_prompt) if isinstance(target_prompt, list) else 1
 
         if slider_to_target is None:
-            # Backward-compat: 1 slider per target (identita').
+            # Identity mapping: one slider per target.
             num_sliders = num_targets
             target_to_sliders = [[i] for i in range(num_targets)]
         else:
@@ -672,8 +686,8 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
             for s_idx, t_idx in enumerate(slider_to_target):
                 if not (0 <= t_idx < num_targets):
                     raise ValueError(
-                        f"slider_to_target[{s_idx}]={t_idx} fuori range "
-                        f"[0, {num_targets}). Ci sono {num_targets} target_prompt."
+                        f"slider_to_target[{s_idx}]={t_idx} is out of range "
+                        f"[0, {num_targets}); there are {num_targets} target_prompts."
                     )
             target_to_sliders = [[] for _ in range(num_targets)]
             for s_idx, t_idx in enumerate(slider_to_target):
@@ -681,18 +695,18 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
             for t_idx, slist in enumerate(target_to_sliders):
                 if len(slist) == 0:
                     raise ValueError(
-                        f"target {t_idx} ('{target_prompt[t_idx]}') non ha alcuno "
-                        f"slider associato. Aggiungi almeno uno slider che mappi "
-                        f"a questo target o rimuovi il target."
+                        f"target {t_idx} ('{target_prompt[t_idx]}') has no slider "
+                        f"assigned. Add at least one slider that maps to this "
+                        f"target, or remove the target."
                     )
             joint_attention_kwargs["target_to_sliders"] = target_to_sliders
 
         if target_lora_scales is not None:
             if len(target_lora_scales) != num_sliders:
                 raise ValueError(
-                    f"target_lora_scales ha len={len(target_lora_scales)} ma ci "
-                    f"sono {num_sliders} slider caricati. Serve una scale per "
-                    f"ogni concept slider."
+                    f"target_lora_scales has len={len(target_lora_scales)} but "
+                    f"{num_sliders} sliders are loaded; one scale per slider is "
+                    f"required."
                 )
             joint_attention_kwargs["target_lora_scales"] = [float(s) for s in target_lora_scales]
 
@@ -793,7 +807,8 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
 
         masks = [[] for _ in range(len(target_prompt))]
 
-        # shop_concept mask-dump: catture dall'ultima iter di prior extraction.
+        # Captured during the last prior-extraction step when
+        # `mask_dump_path` is set, then written to disk below.
         _mask_dump_soft = None  # list of soft sigmoid masks [1, N, 1], pre-binarize
         _mask_dump_raw = None   # list of raw normalized attention [B, N] pre-blob
 
@@ -896,15 +911,15 @@ class RealGenerationPipeline(DiffusionPipeline, FluxLoraLoaderMixin, FromSingleF
             for idx in range(len(target_masks)):
                 seg_masks.append((labels == idx).to(latents))
 
-            # shop_concept mask-dump: cattura le soft masks dall'ULTIMA iter
-            # di prior-extraction (i corrisponde al timestep idx del for-loop).
+            # On the last prior-extraction step, snapshot the soft sigmoid
+            # masks so they can be written to disk together with the binary
+            # segmentation masks below.
             if mask_dump_path is not None and i == len(timesteps[:5]) - 1:
-                # masks[idx][-1] e' la sigmoid-soft aggiunta a riga ~840
                 _mask_dump_soft = [masks[idx][-1].detach().clone() for idx in range(len(target_masks))]
 
         avg_masks = seg_masks
 
-        # shop_concept mask-dump: scrivi PNG per ciascun target.
+        # Write one PNG pair (soft + segmentation) per target.
         if mask_dump_path is not None:
             _dump_dir = os.path.dirname(mask_dump_path)
             if _dump_dir:

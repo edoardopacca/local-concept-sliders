@@ -1,34 +1,36 @@
 """
-shop_concept/generate.py
-========================
-Entrypoint CLI per generare immagini con Flux applicando uno o piu' Concept
-Sliders alla maniera di LoRAShop (mask estratte dall'attenzione del block
-19, blending per-token).
+CLI entrypoint for generating images with Flux.1-dev and one or more
+Concept Sliders applied through the LoRAShop-style mask-aware pipeline
+(masks derived from the cross-attention of late transformer blocks during
+the first few denoising steps; blending per token onwards).
 
-Due modalita' d'uso:
+Two usage modes:
 
-(1) 1 slider per target (retro-compat, mapping implicito 1:1):
+(1) One slider per target (implicit 1:1 mapping):
     --slider_paths   smile.pt vangogh.pt
     --target_prompt  man      sky
     --lora_scales    1.0      0.8
     --prompt "a photo of a man under the sky"
 
-(2) Multi slider per target (composizione paper-style, somma additiva
-    delle delta nella stessa regione mascherata):
+(2) Several sliders inside the same target (compositional aggregation:
+    PEFT sums the deltas of every active adapter inside the masked
+    region):
     --slider_paths     smile.pt age.pt smile.pt age.pt
     --target_prompt    man      woman
     --slider_to_target 0 0 1 1
     --lora_scales      1 1 -1 -1
     --prompt "a man and a woman"
-    -> uomo: smile+age positivi compositi; donna: smile+age negativi.
+    -> man: positive smile + positive age; woman: negative smile +
+       negative age.
 
-In entrambe le modalita' ogni --lora_scales e' il valore continuo del
-Concept Slider per il singolo slider (0.0=off, 1.0=full training strength,
->1.0=extrapolation), indicizzato per posizione in --slider_paths.
+In both modes every value in --lora_scales is the continuous strength of
+the corresponding Concept Slider (0.0 = off, 1.0 = training strength,
+>1.0 = extrapolation), indexed by position in --slider_paths.
 
-Gli slider in formato nativo (.pt, LoRANetwork kohya) vengono convertiti
-on-the-fly a safetensors PEFT in una cache temporanea. Per pre-convertirli
-una volta per sempre, usa convert_slider_to_peft.py.
+Sliders saved in the native Concept-Sliders format (.pt, kohya-ss
+`LoRANetwork`) are converted to PEFT safetensors on the fly and cached
+under `--cache_dir`. To pre-convert a slider once, use
+`convert_slider_to_peft.py`.
 """
 
 from __future__ import annotations
@@ -44,11 +46,11 @@ from typing import List, Optional
 import torch
 from safetensors.torch import load_file
 
-# Esecuzione sia come modulo (python -m shop_concept.generate)
-# sia come script (python shop_concept/generate.py).
+# Importable both as a module (`python -m flux.tasks.shop_concept.scripts.generate`)
+# and as a script (`python flux/tasks/shop_concept/scripts/generate.py`). When
+# launched as a script, add the repository root to sys.path so the absolute
+# imports below resolve.
 if __package__ is None or __package__ == "":
-    # Lanciato come script: aggiungi la repo root a sys.path per gli import assoluti.
-    # __file__ = .../flux/tasks/shop_concept/scripts/generate.py → parents[4] = repo root
     _REPO_ROOT = Path(__file__).resolve().parents[4]
     sys.path.insert(0, str(_REPO_ROOT))
     from flux.tasks.shop_concept.lib.flux_real_pipeline import RealGenerationPipeline  # noqa: E402
@@ -62,11 +64,12 @@ else:
 # Utility: LoRA loading
 # ---------------------------------------------------------------------------
 def ensure_matching_lora_params(lora_state_dicts, rank: int = 16):
-    """Allinea le chiavi tra piu' LoRA, riempendo con zeri i moduli mancanti.
+    """Align the keys of several LoRA state dicts by filling missing
+    modules with zero tensors.
 
-    NOTA: derivato da LoRAShop-main/main.py. Per Concept Sliders addestrati
-    con la stessa architettura (xattn, stesso rank), le chiavi dovrebbero
-    gia' coincidere tra tutti gli slider, quindi questo e' di solito no-op.
+    Adapted from the equivalent helper in upstream LoRAShop. For Concept
+    Sliders trained with the same architecture (`xattn`, same rank) the
+    keys are already aligned, so this is normally a no-op.
     """
     ranks = []
     for lora_dict in lora_state_dicts:
@@ -116,20 +119,23 @@ def ensure_matching_lora_params(lora_state_dicts, rank: int = 16):
 
 
 def prepare_slider_as_safetensors(slider_path: str, cache_dir: str) -> str:
-    """Se il file e' .safetensors, ritorna path as-is.
-    Se e' .pt, converte in safetensors dentro cache_dir e ritorna il path.
+    """Return a PEFT-format safetensors path for the given slider.
+
+    `.safetensors` inputs are returned unchanged. `.pt` inputs (kohya-ss
+    Concept-Sliders native format) are converted to PEFT safetensors inside
+    `cache_dir` and the cached file is returned.
     """
     p = Path(slider_path)
     if not p.exists():
-        raise FileNotFoundError(f"Slider non trovato: {slider_path}")
+        raise FileNotFoundError(f"Slider not found: {slider_path}")
     if p.suffix == ".safetensors":
         return str(p)
     if p.suffix != ".pt":
         raise ValueError(
-            f"Estensione slider non supportata: {p.suffix}. Serve .pt o .safetensors."
+            f"Unsupported slider extension: {p.suffix}. Expected .pt or .safetensors."
         )
 
-    # Hash path+mtime per cache stabile
+    # Hash on path + mtime so the cache invalidates when the source file changes.
     key = f"{p.resolve()}|{p.stat().st_mtime}".encode()
     digest = hashlib.sha1(key).hexdigest()[:12]
     out_name = f"{p.stem}__{digest}.safetensors"
@@ -137,7 +143,7 @@ def prepare_slider_as_safetensors(slider_path: str, cache_dir: str) -> str:
     os.makedirs(cache_dir, exist_ok=True)
 
     if not out_path.exists():
-        print(f"[shop_concept] converto {p} -> {out_path}")
+        print(f"[shop_concept] converting {p} -> {out_path}")
         convert_slider_file(
             input_path=str(p),
             output_path=str(out_path),
@@ -169,7 +175,7 @@ def main():
         "--device",
         type=str,
         default="cuda",
-        help="Device per Flux (cuda|cpu).",
+        help="Device for Flux (cuda|cpu).",
     )
 
     # Sliders
@@ -178,22 +184,22 @@ def main():
         type=str,
         nargs="+",
         required=True,
-        help="Path a uno o piu' slider. Accetta .pt (auto-convert) o .safetensors PEFT.",
+        help="Path to one or more sliders. Accepts .pt (auto-converted) or .safetensors (PEFT).",
     )
     parser.add_argument(
         "--lora_scales",
         type=float,
         nargs="+",
         default=None,
-        help="Una scale continua per ogni --slider_paths (stessa lunghezza). "
-             "0.0 = slider off, 1.0 = strength training, >1.0 = extrapolation. "
-             "Se omesso, default 1.0 per tutti.",
+        help="One continuous scale per --slider_paths (same length). "
+             "0.0 = slider off, 1.0 = training strength, >1.0 = extrapolation. "
+             "Defaults to 1.0 for every slider if omitted.",
     )
     parser.add_argument(
         "--cache_dir",
         type=str,
         default="flux/tasks/shop_concept/_peft_cache",
-        help="Dove mettere le conversioni .pt -> .safetensors.",
+        help="Directory used to cache .pt -> .safetensors slider conversions.",
     )
 
     # Prompts
@@ -201,31 +207,30 @@ def main():
         "--prompt",
         type=str,
         required=True,
-        help="Prompt principale (ogni target_prompt deve esserne sottostringa).",
+        help="Main prompt; every target_prompt must be a literal substring of it.",
     )
     parser.add_argument(
         "--target_prompt",
         type=str,
         nargs="+",
         required=True,
-        help="Una sottostringa esatta di --prompt per ogni regione mascherata. "
-             "Senza --slider_to_target: deve avere la stessa lunghezza di "
-             "--slider_paths (mapping 1:1 implicito). "
-             "Con --slider_to_target: lunghezza pari al numero di REGIONI "
-             "(puo' essere minore degli slider, perche' piu' slider possono "
-             "puntare alla stessa regione).",
+        help="One exact substring of --prompt per masked region. Without "
+             "--slider_to_target it must have the same length as --slider_paths "
+             "(implicit 1:1 mapping). With --slider_to_target the length is the "
+             "number of regions (can be smaller than the number of sliders, "
+             "since several sliders may map to the same region).",
     )
     parser.add_argument(
         "--slider_to_target",
         type=int,
         nargs="+",
         default=None,
-        help="Mappa slider->target. `--slider_to_target 0 0 1` significa: "
-             "slider 0 e 1 vanno entrambi sul target_prompt 0 (composizione "
-             "paper-style: somma additiva delle delta nella stessa regione), "
-             "slider 2 va sul target_prompt 1. "
-             "Lunghezza == numero di --slider_paths. "
-             "Se omesso, default identita' (1 slider per target, retro-compat).",
+        help="Slider->target mapping. `--slider_to_target 0 0 1` means: "
+             "slider 0 and 1 are both applied inside target_prompt 0 "
+             "(compositional aggregation, PEFT sums their deltas additively), "
+             "and slider 2 is applied inside target_prompt 1. "
+             "Length must equal --slider_paths. "
+             "If omitted, defaults to the identity (one slider per target).",
     )
 
     # Generation
@@ -240,13 +245,13 @@ def main():
         "--edit_start_step",
         type=int,
         default=8,
-        help="Step a partire dal quale inizia il blending mask-guidato.",
+        help="Step from which mask-guided blending becomes active.",
     )
     parser.add_argument(
         "--lora_fill_rank",
         type=int,
         default=16,
-        help="Rank per i placeholder zeri in ensure_matching_lora_params.",
+        help="Rank used for the zero placeholders inside ensure_matching_lora_params.",
     )
 
     args = parser.parse_args()
@@ -256,27 +261,27 @@ def main():
     num_targets = len(args.target_prompt)
 
     if args.slider_to_target is None:
-        # Retro-compat: 1 slider per target.
+        # Identity mapping: one slider per target.
         if num_targets != num_sliders:
             raise ValueError(
-                f"Senza --slider_to_target, --target_prompt ({num_targets}) deve "
-                f"matchare --slider_paths ({num_sliders}). Per piu' slider sullo "
-                f"stesso target usa --slider_to_target."
+                f"Without --slider_to_target, --target_prompt ({num_targets}) "
+                f"must match --slider_paths ({num_sliders}). Use "
+                f"--slider_to_target to apply several sliders to the same target."
             )
         slider_to_target = list(range(num_sliders))
     else:
         if len(args.slider_to_target) != num_sliders:
             raise ValueError(
-                f"--slider_to_target ha {len(args.slider_to_target)} elementi ma "
-                f"--slider_paths ne ha {num_sliders}. Serve un target_idx per ogni "
-                f"slider."
+                f"--slider_to_target has {len(args.slider_to_target)} entries "
+                f"but --slider_paths has {num_sliders}; one target index per "
+                f"slider is required."
             )
         slider_to_target = list(args.slider_to_target)
         for s_idx, t_idx in enumerate(slider_to_target):
             if not (0 <= t_idx < num_targets):
                 raise ValueError(
-                    f"--slider_to_target[{s_idx}]={t_idx} fuori range "
-                    f"[0, {num_targets}). Hai {num_targets} target_prompt."
+                    f"--slider_to_target[{s_idx}]={t_idx} is out of range "
+                    f"[0, {num_targets}); there are {num_targets} target_prompts."
                 )
 
     if args.lora_scales is None:
@@ -284,17 +289,17 @@ def main():
     else:
         if len(args.lora_scales) != num_sliders:
             raise ValueError(
-                f"Numero di --lora_scales ({len(args.lora_scales)}) deve "
-                f"matchare numero di --slider_paths ({num_sliders})."
+                f"Number of --lora_scales ({len(args.lora_scales)}) must match "
+                f"the number of --slider_paths ({num_sliders})."
             )
         lora_scales = list(args.lora_scales)
 
-    # Tutti i target_prompt devono essere sottostringhe del prompt
+    # Every target_prompt must be a literal substring of the main prompt.
     for tp in args.target_prompt:
         if tp not in args.prompt:
             raise ValueError(
-                f"target_prompt '{tp}' non trovato letteralmente in --prompt. "
-                f"LoRAShop richiede che sia una sottostringa esatta."
+                f"target_prompt '{tp}' is not a literal substring of --prompt; "
+                f"the mask-aware pipeline requires an exact substring match."
             )
 
     # -------- Load Flux pipeline --------
@@ -318,11 +323,12 @@ def main():
             f"  [slider {i}] target[{t_idx}]='{args.target_prompt[t_idx]}' "
             f"scale={lora_scales[i]} path={args.slider_paths[i]}"
         )
-        # adapter_name esplicito: garantisce nomi distinti default_0..N-1
-        # (allinea con _set_adapter_with_scale in flux_blocks.py) e supporta
-        # il caricamento dello STESSO file slider piu' volte come adapter
-        # distinti (utile quando un concept va applicato a target multipli
-        # con scale diverse — es. smile +1 sul man e -1 sulla woman).
+        # Explicit adapter_name guarantees distinct names default_0..N-1 (the
+        # convention expected by `_set_adapter_with_scale` in flux_blocks.py)
+        # and allows loading the SAME slider file several times as distinct
+        # adapters — useful when the same concept needs to be applied to
+        # several targets with different scales (e.g. smile +1 on the man
+        # and -1 on the woman).
         pipe.load_lora_weights(lora_dict, adapter_name=f"default_{i}")
 
     # -------- Patch Flux transformer blocks --------
@@ -340,9 +346,9 @@ def main():
     print(f"                          targets         ={args.target_prompt}")
     print(f"                          scales (slider) ={lora_scales}")
     print(f"                          slider->target  ={slider_to_target}")
-    # In modalita' multi-LoRA per target, la pipeline costruisce il mapping
-    # target_to_sliders e attiva piu' adapter PEFT contemporaneamente sulla
-    # stessa regione mascherata (somma additiva delle delta).
+    # When several sliders map to the same target, the pipeline builds the
+    # inverse target_to_sliders mapping and activates multiple PEFT adapters
+    # simultaneously inside the matching region (their deltas are summed).
     pipe_kwargs = dict(
         prompt=args.prompt,
         target_prompt=args.target_prompt,

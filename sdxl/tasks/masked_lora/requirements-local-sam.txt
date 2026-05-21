@@ -1,5 +1,6 @@
-# Dipendenze per 02_segment_with_sam.py (solo fase SAM in locale).
-# PyTorch e segment-anything si installano da setup_local_venv.sh
+# Dependencies for the local SAM stage (mask_SAM/*.py).
+# PyTorch and segment-anything are installed separately; see the
+# top-level README for the local SAM setup.
 numpy>=1.23
 Pillow>=10
 opencv-python-headless>=4.5

@@ -10,18 +10,17 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# two_subjects_vangogh_sweep.slurm
-# =============================================================================
-# Stesso setup del sweep smile precedente: coppia man + woman, 512x512.
-# Slider Van Gogh applicato a ENTRAMBI con stessa scale, sweep 0..5.
+# Same setup as the smile sweep: a man + woman couple at 512x512. The
+# Van Gogh style slider is applied to BOTH subjects with the same scale,
+# swept from 0 to 5.
 #
-# 6 immagini:
-#   01_scale_0_0.png  → man=0  woman=0  (baseline, slider OFF)
-#   02_scale_1_0.png  → man=1  woman=0
-#   03_scale_2_0.png  → man=2  woman=0
-#   04_scale_3_0.png  → man=3  woman=0
-#   05_scale_4_0.png  → man=4  woman=0
-#   06_scale_5_0.png  → man=5  woman=0
+# 6 images:
+#   01_scale_0_0.png  -> man=0  woman=0  (baseline, slider OFF)
+#   02_scale_1_0.png  -> man=1  woman=0
+#   03_scale_2_0.png  -> man=2  woman=0
+#   04_scale_3_0.png  -> man=3  woman=0
+#   05_scale_4_0.png  -> man=4  woman=0
+#   06_scale_5_0.png  -> man=5  woman=0
 # =============================================================================
 
 set -euo pipefail
@@ -39,7 +38,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER="flux/trained_sliders/sliders/vangogh_flux_v1_rank16_xattn_alpha1/flux-vangogh_flux_v1/slider_0.pt"
 

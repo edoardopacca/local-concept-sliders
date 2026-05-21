@@ -14,13 +14,13 @@
 # =============================================================================
 # FASE 3 — Applica il masked LoRA daynight su tutte e 20 le run.
 #
-# Prerequisiti: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
+# Requirements: base.png + init_latents.pt (fase 1)  e  mask.png (fase 2)
 #
 # Slider: daynight_sdxl_v1_alpha1.0_rank4_noxattn
 # Scale: 3.0 ottimale per daynight (come da sperimentazione precedente);
 #        si testano anche 1.5 e 2.0 per completezza della curva.
 #
-# FASE 2 — Come creare le maschere (eseguire in locale):
+# Phase 2 — produce the masks locally:
 #   Per ogni eval_daynight_{NN}:
 #     python mask_SAM/segment_with_sam.py \
 #       --image_path sdxl/tasks/masked_lora/runs/eval_daynight_NN/base.png \
@@ -28,7 +28,7 @@
 #       --mode interactive
 #   Cliccare sulla regione del CIELO (in alto nell'immagine).
 #   Se il cielo è piccolo o parzialmente coperto, cliccare sulla zona
-#   più estesa e aperta.
+#   larger and more open.
 # =============================================================================
 
 set -euo pipefail
@@ -86,7 +86,7 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_daynight                        ==="
+echo "=== FASE 3 COMPLETED: eval_daynight                        ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept daynight --device cuda"

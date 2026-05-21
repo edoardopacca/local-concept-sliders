@@ -10,26 +10,15 @@
 #SBATCH --error=sdxl/trained_sliders/training/logs/%x_%j.err
 
 # =============================================================================
-# train_furlength_dog_sdxl_v1.slurm
+# train_furlength_dog_sdxl_v1.slurm  —  OBSOLETE (cannot run)
 # =============================================================================
-# Fur length slider for DOGS ONLY (our spatial concept slider method).
-#
-# Strategy:
-#   - Dog entries (10): positive=long fur, unconditional=short fur → direction learned
-#   - Cat entries (5):  positive=unconditional=neutral → zero direction
-#
-# Setup:
-#   - 15 entries: 10 dog + 5 cat neutral
-#   - rank 4, alpha 1.0, noxattn
-#   - guidance_scale 4, resolution 1024, 1000 iterations
-#   - start_noise 750
-#
-# Test: scale -2 -1 0 1 2, seed 42
-#   - slider must affect ONLY dogs, not cats
-#
-# Output slider:
-#   sdxl/trained_sliders/sliders/furlength_dog_sdxl_v1_alpha1.0_rank4_noxattn/
-#     furlength_dog_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors
+# This SLURM template trained a subject-specific fur-length slider. The
+# corresponding training config and prompt YAML have been removed from
+# the repository, so the job is no longer runnable. It is retained only
+# because deleting it would require also editing surrounding code paths.
+# The current paper proposes a single method — external mask-guided
+# localization of a LoRA adapter at inference time (§4) — and does not
+# include a subject-specific training variant.
 # =============================================================================
 
 set -euo pipefail
@@ -44,7 +33,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 echo "================================================================"
-echo "=== FASE 1: TRAINING furlength_dog_sdxl_v1                   ==="
+echo "=== PHASE 1: TRAINING furlength_dog_sdxl_v1                   ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -57,14 +46,14 @@ python sdxl/trained_sliders/training/scripts/train.py \
     --device 0
 
 echo ""
-echo "=== Training completato ==="
+echo "=== Training completed ==="
 SLIDER_DIR="sdxl/trained_sliders/sliders/furlength_dog_sdxl_v1_alpha1.0_rank4_noxattn"
 SLIDER="${SLIDER_DIR}/furlength_dog_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors"
 ls -lh "$SLIDER_DIR"
 
 echo ""
 echo "================================================================"
-echo "=== FASE 2: TEST POST-TRAINING                                ==="
+echo "=== PHASE 2: POST-TRAINING TEST                                ==="
 echo "================================================================"
 
 TEST_ROOT="sdxl/tasks/baseline/outputs/furlength_dog_sdxl_v1_test"
@@ -94,7 +83,7 @@ run_test "a photorealistic portrait of a dog and a cat, sharp focus"            
 
 echo ""
 echo "================================================================"
-echo "=== JOB COMPLETATO                                            ==="
+echo "=== JOB COMPLETED                                            ==="
 echo "=== Output slider: ${SLIDER_DIR}                              ==="
 echo "=== Output test:   ${TEST_ROOT}                               ==="
 echo "================================================================"

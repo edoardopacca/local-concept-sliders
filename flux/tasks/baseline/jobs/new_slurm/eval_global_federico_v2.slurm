@@ -10,15 +10,11 @@
 #SBATCH --error=flux/tasks/baseline/logs/%x_%j.err
 
 # =============================================================================
-# eval_global_federico_v2.slurm
-# =============================================================================
-# Generazione GLOBALE (no mask) con i 6 slider di Federico (v2_custom).
-# 6 slider × 8 scale × 2 prompt = 96 immagini totali.
+# Global generation (no mask) with the 6 v2_custom sliders.
+# 6 sliders x 8 scales x 2 prompts = 96 images total.
 #
-# Tutti noxattn, rank 16, alpha 1.
-#
-# CyberDuck: mettere Sliders-flux/ su HPC come:
-#   $FERT_REPO/flux/trained_sliders/sliders/federico_v2/
+# All sliders: noxattn, rank 16, alpha 1.
+# Slider weights expected under $FERT_REPO/flux/trained_sliders/sliders/v2_custom/.
 # =============================================================================
 
 set -euo pipefail

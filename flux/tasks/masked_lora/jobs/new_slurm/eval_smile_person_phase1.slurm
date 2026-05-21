@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=flux_eval_smile_p1
-#SBATCH --account=3352759
 #SBATCH --partition=stud
 #SBATCH --qos=stud
 #SBATCH --gpus=1
@@ -97,7 +96,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_smile_person Flux               ==="
+echo "=== FASE 1 COMPLETED: eval_smile_person Flux               ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_smile_person_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_smile_person_* | wc -l)"

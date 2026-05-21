@@ -14,8 +14,8 @@
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione furlength.
 #
-# Slider usato in fase 3: furlength_pet_sdxl_v1.
-# Semi: stessi numeri 1001–1020 dei concept person per uniformità.
+# Slider used in phase 3: furlength_pet_sdxl_v1.
+# Seeds: the same 1001-1020 used by the person concepts for uniformity.
 # Prompt: cani e gatti, masker = animale target in fase 2.
 #
 # Output: sdxl/tasks/masked_lora/runs/eval_furlength_{01..20}/
@@ -98,7 +98,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_furlength                       ==="
+echo "=== FASE 1 COMPLETED: eval_furlength                       ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_furlength_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_furlength_* | wc -l)"

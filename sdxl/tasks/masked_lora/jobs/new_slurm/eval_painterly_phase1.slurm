@@ -14,7 +14,7 @@
 # =============================================================================
 # FASE 1 — Genera 20 immagini base per il set di valutazione painterly.
 #
-# Slider usato in fase 3: painterly_sdxl_v1.
+# Slider used in phase 3: painterly_sdxl_v1.
 # I prompt descrivono soggetti concreti SENZA stile: la base è fotorealistica,
 # lo slider di pittura viene applicato solo sul soggetto in fase 3.
 # Ogni immagine ha un soggetto singolo in primo piano facilmente selezionabile
@@ -103,7 +103,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_painterly                       ==="
+echo "=== FASE 1 COMPLETED: eval_painterly                       ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_painterly_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_painterly_* | wc -l)"

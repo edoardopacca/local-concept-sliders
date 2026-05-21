@@ -10,16 +10,15 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# two_subjects_smile_age_sweep.slurm — 2 slider diversi, 2 soggetti
-# =============================================================================
-# Stessa scena man + woman del sweep smile, ma con 2 slider differenti:
-#   - slider SMILE  applicato all'UOMO   (positivo = sorride)
-#   - slider AGE    applicato alla DONNA (negativo = ringiovanisce)
+# Same man + woman scene as the smile-only sweep, but with 2 different
+# sliders:
+#   - SMILE slider applied to the MAN   (positive = smiling)
+#   - AGE   slider applied to the WOMAN (negative = younger)
 #
-# 3 immagini:
-#   01_scale_0_0.png   → man_smile=0  woman_age=0   (entrambi OFF, baseline)
-#   02_scale_1_-1.png  → man_smile=1  woman_age=-1  (man sorride, woman più giovane)
-#   03_scale_2_-2.png  → man_smile=2  woman_age=-2  (estremi)
+# 3 images:
+#   01_scale_0_0.png   -> man_smile=0  woman_age=0   (both OFF, baseline)
+#   02_scale_1_-1.png  -> man_smile=1  woman_age=-1  (man smiles, woman younger)
+#   03_scale_2_-2.png  -> man_smile=2  woman_age=-2  (extremes)
 # =============================================================================
 
 set -euo pipefail
@@ -37,16 +36,16 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER_SMILE="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 SLIDER_AGE="flux/trained_sliders/sliders/age_flux_v1_symmetric_rank16_xattn_alpha1/flux-age_flux_v1_symmetric/slider_0.pt"
 
 PROMPT="a man and a woman facing the camera, studio portrait, neutral expression"
 
-# Target: (soggetto, slider applicato a quel soggetto)
-#   man   → slider SMILE
-#   woman → slider AGE
+# Target: (subject, slider applied to that subject)
+#   man   -> SMILE slider
+#   woman -> AGE   slider
 TARGETS=(man woman)
 
 SEED=42
@@ -63,8 +62,8 @@ echo "=============================================="
 echo "=== shop_concept: 2 subjects smile+age     ==="
 echo "=============================================="
 echo "prompt      : $PROMPT"
-echo "man slider  : smile (positivo = sorride)"
-echo "woman slider: age   (negativo = ringiovanisce)"
+echo "man slider  : smile (positive = smiling)"
+echo "woman slider: age   (negative = younger)"
 echo "seed        : $SEED"
 echo "out_dir     : $OUT_DIR"
 echo ""

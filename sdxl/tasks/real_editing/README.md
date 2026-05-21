@@ -1,200 +1,189 @@
-# real_editing
+# `sdxl/tasks/real_editing/`
 
-Pipeline per **real image editing** con concept sliders su SDXL.  
-Obiettivo: invertire una fotografia reale nello spazio latente del modello, poi applicare un LoRA slider in modo mascherato su una regione specifica — senza toccare il resto dell'immagine.
+Real-image editing pipeline used for the verification mentioned in §1 of
+the paper: the same masked-edit operator of §4 is applied to a real
+photograph after a preliminary inversion. The inversion quality is an
+orthogonal variable to slider localisation, so this task is kept
+outside the main experimental loop; the SDXL pipeline here is what we
+used to confirm that the edit operator transfers from generated to real
+images.
 
----
-
-## Pipeline completa
-
-```
-Foto originale
-      │
-      ▼
-[Stage 1] Tight Inversion  ──────────────────────────────────────────────
-      │   scripts/invert_real_image.py
-      │   Job HPC: real_editing/jobs/run_tight_inversion.slurm
-      │
-      │   Output: runs/<RUN_ID>/
-      │     ├── original.png        ← foto a piena risoluzione (EXIF corretta)
-      │     ├── reconstruction.png  ← crop 1024×1024 che SDXL vede
-      │     ├── x_t.pt              ← latente invertito
-      │     ├── text_condition/     ← embeddings testuali salvati
-      │     ├── metadata.json
-      │     └── config.json
-      │
-      ▼
-[Stage 2] Segmentazione SAM  ────────────────────────────────────────────
-      │   scripts/segment_with_sam.py
-      │   (gira in locale sul Mac, NON sull'HPC)
-      │
-      │   ⚠️  Segmenta SEMPRE reconstruction.png, non original.png.
-      │       SDXL lavora nel crop 1024×1024. Se segmenti original.png
-      │       le coordinate della maschera non si allineano ai latenti.
-      │
-      │   Output: runs/<RUN_ID>/mask_target.png
-      │
-      ▼
-[Stage 3] Masked Edit  ──────────────────────────────────────────────────
-      │   scripts/edit_real_image_masked.py
-      │   Job HPC: real_editing/jobs/run_tight_edit.slurm
-      │
-      │   Output: runs/<RUN_ID>/
-      │     ├── edited_<nome>.png            ← crop 1024×1024 editato (raw)
-      │     └── composite_edited_<nome>.png  ← OUTPUT FINALE: edit incollato
-      │                                         nella foto originale ad alta res
-      ▼
-Immagine finale
-```
-
----
-
-## Struttura del codice
+## Pipeline
 
 ```
-real_editing/
-├── models/
-│   ├── base.py        ← interfaccia astratta ModelContext
-│   ├── sdxl.py        ← implementazione SDXL (VAE fisso in float32, IP-Adapter)
-│   └── loader.py      ← factory: load_model_context(...)
-│
-├── inversion/
-│   ├── base.py              ← ABC InversionBackend + dataclass InversionResult
-│   ├── tight_inversion.py   ← backend principale: DDIM + GD + IP-Adapter
-│   ├── ddim.py              ← funzioni helper usate da tight_inversion
-│   └── registry.py          ← get_backend("tight_inversion")
-│
-├── editing/
-│   ├── masked_editor.py  ← MaskedLoRAEditor: applica slider solo dentro la maschera
-│   ├── blending.py       ← noise_blend, feather_mask, pixel_composite, load_mask
-│   └── slider_loader.py  ← carica checkpoint LoRA sull'UNet
-│
-├── io/
-│   ├── artifacts.py  ← save/load inversion artifacts + edit artifacts
-│   └── metrics.py    ← LPIPS, SSIM, PSNR
-│
+real image
+   |
+   v
+[Stage 1] Tight inversion (HPC)
+   |   scripts/invert_real_image.py
+   |   Writes outputs/<RUN_ID>/{original.png, reconstruction.png,
+   |     x_t.pt, metadata.json, ...}
+   v
+[Stage 2] SAM mask (local, interactive)
+   |   mask_SAM/segment_with_sam.py on reconstruction.png
+   |   Writes outputs/<RUN_ID>/mask_target.png
+   v
+[Stage 3] Masked LoRA edit (HPC)
+       scripts/edit_real_image_masked.py
+       Writes outputs/<RUN_ID>/{edited_<name>.png,
+         composite_edited_<name>.png}
+```
+
+The crop in Stage 2 must be taken on `reconstruction.png`, not on
+`original.png`: SDXL works on the 1024x1024 crop and a mask drawn on
+the full-resolution original would not align with the latents.
+
+The final pixel-space composite (`composite_edited_<name>.png`) pastes
+the edited 1024x1024 crop back onto the full-resolution original, so
+the part of the image outside the mask is preserved at the original
+resolution.
+
+## Origin
+
+The inversion backend is adapted from **Tight Inversion** (Kadosh et al.,
+2025, [HuggingFace Space](https://huggingface.co/spaces/tight-inversion/tight-inversion),
+[arXiv:2502.20376](https://arxiv.org/abs/2502.20376)). The Space ships
+without an explicit license file; we use the adapted excerpts as
+research-only reference and credit the authors accordingly. The
+file-level mapping is:
+
+| File here | Adapted from (Tight Inversion HF Space) | What was extracted |
+|---|---|---|
+| `lib/inversion/tight_inversion.py` | `src/exact_inversion.py`, `src/pipes/sdxl_inversion_pipeline.py`, `app.py` | the `inversion_step()` GD optimisation, the `unet_pass()` helper, the SDXL inversion loop with `added_cond_kwargs`, the IP-Adapter integration pattern |
+| `lib/inversion/ddim.py` | `src/schedulers/ddim_scheduler.py` | the `inv_step()` reverse DDIM math |
+
+Runtime weights downloaded on first use: IP-Adapter (plus, SDXL, ViT-H)
+from [`h94/IP-Adapter`](https://huggingface.co/h94/IP-Adapter) (Apache-2.0)
+for the image conditioning, and SDXL base
+(`stabilityai/stable-diffusion-xl-base-1.0`, OpenRAIL++) as the backbone.
+
+Everything else in this directory — the masked-edit operator
+(`lib/editing/`), the IO helpers (`lib/io/`), the SDXL `ModelContext`
+wrapper (`lib/models/sdxl.py`), and the two CLI entrypoints — is
+original to this work. The files in `lib/archive/` (`null_text.py`,
+`provenance.py`, `sd1x.py`) are early SD-1.x prototypes kept for
+reference; they are not used by the pipeline reported in the paper.
+
+## Layout
+
+```
+sdxl/tasks/real_editing/
+├── scripts/
+│   ├── invert_real_image.py            # Stage 1: invert a real image
+│   └── edit_real_image_masked.py       # Stage 3: masked LoRA edit
+├── lib/
+│   ├── models/                         # ModelContext (SDXL) + loader factory
+│   ├── inversion/                      # backends: tight_inversion, ddim, registry
+│   ├── editing/                        # MaskedLoRAEditor, blending, slider loader
+│   ├── io/                             # artefact (de)serialisation, metrics
+│   └── archive/                        # legacy SD1.x / null_text / EDICT (not used in the paper)
 ├── jobs/
-│   ├── run_tight_inversion.slurm  ← job SLURM Stage 1
-│   └── run_tight_edit.slurm       ← job SLURM Stage 3
-│
-├── runs/              ← output degli esperimenti (creata a runtime)
-├── archive/           ← file non più usati (sd1x.py, null_text.py, provenance.py)
+│   └── new_slurm/                      # SLURM templates for Stage 1 and Stage 3 (user-provided)
 └── README.md
 ```
 
----
-
-## Stage 1 — Inversione (HPC)
+## Stage 1 — Inversion (HPC)
 
 ```bash
-RUN_ID=my_run_001 \
-IMAGE=real_editing/input/foto.jpg \
-PROMPT="una persona in piedi" \
-sbatch real_editing/jobs/run_tight_inversion.slurm
+python sdxl/tasks/real_editing/scripts/invert_real_image.py \
+    --image path/to/photo.jpg \
+    --prompt "a portrait of a person" \
+    --run_id my_run_001
 ```
 
-Parametri configurabili via env var:
+Useful CLI flags:
 
-| Variabile | Default | Descrizione |
-|-----------|---------|-------------|
-| `RUN_ID` | `try_tight_001` | Nome cartella output sotto `runs/` |
-| `IMAGE` | *(vedi slurm)* | Path immagine di input |
-| `PROMPT` | `two people standing together` | Descrizione testuale dell'immagine |
-| `NUM_GD_STEPS` | `3` | Passi di gradient descent per step di inversione |
-| `IPA_SCALE` | `0.4` | Forza del conditioning IP-Adapter |
+| Flag | Default | Meaning |
+|---|---|---|
+| `--run_id` | `try_tight_001` | Output folder under `outputs/` |
+| `--image` | (required) | Path to the input image |
+| `--prompt` | `two people standing together` | Textual description of the image |
+| `--num_gd_steps` | `3` | Gradient-descent steps per inversion step |
+| `--ipa_scale` | `0.4` | IP-Adapter conditioning strength |
 
----
+By default the script runs Tight Inversion + IP-Adapter. Pass
+`--no_ipa` to disable IP-Adapter (only useful for the pure-DDIM
+baseline).
 
-## Stage 2 — Maschera SAM (Mac locale)
+## Stage 2 — SAM mask (local)
 
 ```bash
-# Modalità interattiva: clicca sul soggetto nella finestra
-python3 scripts/segment_with_sam.py \
-    --run_dir real_editing/runs/<RUN_ID> \
+# Interactive: click on the target subject in the matplotlib window
+python mask_SAM/segment_with_sam.py \
+    --run_dir sdxl/tasks/real_editing/outputs/<RUN_ID> \
     --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
     --image_name reconstruction.png \
     --mode interactive
 
-# Modalità punto: coordinate x,y dentro la regione target
-python3 scripts/segment_with_sam.py \
-    --run_dir real_editing/runs/<RUN_ID> \
-    --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
-    --image_name reconstruction.png \
-    --mode point --point_x <x> --point_y <y>
-
-# Modalità box: bounding box attorno alla regione target
-python3 scripts/segment_with_sam.py \
-    --run_dir real_editing/runs/<RUN_ID> \
-    --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
-    --image_name reconstruction.png \
-    --mode box --box <x1> <y1> <x2> <y2>
+# Or point/box mode for batch operation; see mask_SAM/segment_with_sam.py --help
 ```
 
-Salva `mask_target.png` direttamente in `real_editing/runs/<RUN_ID>/`.
+The mask is saved as `mask_target.png` directly in the run directory.
 
----
-
-## Stage 3 — Edit mascherato (HPC)
+## Stage 3 — Masked edit (HPC)
 
 ```bash
-RUN_ID=my_run_001 \
-MASK_FROM_RUN_ID=my_run_001 \
-SLIDER_PATH=sdxl/trained_sliders/sliders/smiling.pt \
-SLIDER_SCALE=2.0 \
-START_NOISE=800 \
-OUTPUT_NAME=edited_smile_v1.png \
-sbatch real_editing/jobs/run_tight_edit.slurm
+python sdxl/tasks/real_editing/scripts/edit_real_image_masked.py \
+    --run_dir sdxl/tasks/real_editing/outputs/my_run_001 \
+    --slider_path sdxl/trained_sliders/sliders/general/smile_person/smile_person.safetensors \
+    --slider_scale 2.0 \
+    --start_noise 800 \
+    --output_name edited_smile_v1.png
 ```
 
-Parametri configurabili via env var:
+Useful CLI flags:
 
-| Variabile | Default | Descrizione |
-|-----------|---------|-------------|
-| `RUN_ID` | `try_tight_001` | Run da editare (deve avere `x_t.pt`) |
-| `MASK_FROM_RUN_ID` | `try_001` | Run che contiene `mask_target.png` |
-| `SLIDER_PATH` | `sdxl/trained_sliders/sliders/smiling.pt` | Pesi LoRA slider |
-| `SLIDER_SCALE` | `0.4` | Forza dell'edit (valori tipici: 1.0–3.0) |
-| `START_NOISE` | `350` | Applica lo slider solo ai timestep ≤ questo valore |
-| `GUIDANCE_SCALE` | `2.0` | CFG scale (non alzare oltre ~3.0) |
-| `FEATHER_RADIUS` | `16` | Blur gaussiano sui bordi della maschera |
-| `OUTPUT_NAME` | `edited_tight_001_v2.png` | Nome file output |
+| Flag | Default | Meaning |
+|---|---|---|
+| `--run_dir` | (required) | Run to edit (must contain `x_t.pt` and `mask_target.png`) |
+| `--slider_path` | `sdxl/trained_sliders/sliders/smiling.pt` | Slider LoRA weights |
+| `--slider_scale` | `0.4` | Edit strength (typical 1.0-3.0) |
+| `--start_noise` | `350` | Apply the slider only on timesteps <= this threshold |
+| `--guidance_scale` | `2.0` | CFG scale (do not push above ~3.0) |
+| `--feather_radius` | `16` | Gaussian blur radius on the mask edges |
+| `--output_name` | `edited_tight_001_v2.png` | Output filename |
 
-**Output:**
-- `edited_<nome>.png` — crop 1024×1024 denoised direttamente dalla VAE
-- `composite_edited_<nome>.png` — **output finale**: la regione editata incollata nella foto originale ad alta risoluzione
+Outputs:
 
----
+- `edited_<name>.png` — 1024x1024 crop decoded directly from the VAE.
+- `composite_edited_<name>.png` — the edit pasted into the original
+  full-resolution image (the file actually used downstream).
 
-## Note tecniche importanti
+## Implementation notes
 
-**VAE in float32** — Il VAE di SDXL è instabile in float16 e produce output neri/NaN. Nel codice è tenuto permanentemente in float32 anche quando il resto del modello gira in float16.
+- **VAE in float32.** The SDXL VAE is numerically unstable in float16
+  and produces black / NaN outputs. The loader (`lib/models/sdxl.py`)
+  permanently keeps the VAE in float32 even when the rest of the model
+  runs in float16; this avoids the fragile `upcast_vae()` partial path
+  used by some versions of diffusers.
+- **IP-Adapter is mandatory at edit time.** The inversion is performed
+  WITH IP-Adapter as visual conditioning. The editing pass must use the
+  same IP-Adapter with the same parameters, otherwise the denoising
+  trajectory drifts from the inversion trajectory and the output
+  collapses to black.
+- **`start_noise`.** Low values (~350) produce subtle, detail-only
+  edits. High values (~800) produce more structural edits. Pushing too
+  high causes artefacts.
+- **`slider_scale`.** Above ~3.0, artefacts appear outside the mask
+  even with feathering. Stay between 1.0 and 2.5 for natural-looking
+  results.
+- **GPU memory.** SDXL UNet (float16) + VAE (float32) + IP-Adapter +
+  ViT-H image encoder need ~14-16 GB. The SLURM template asks for 24 GB.
 
-**IP-Adapter obbligatorio nell'editing** — L'inversione avviene CON IP-Adapter come conditioning visivo. L'editing deve usare lo stesso IP-Adapter con gli stessi parametri, altrimenti la traiettoria di denoising diverge da quella dell'inversione → immagine nera.
+## Pretrained weights
 
-**`start_noise`** — Valori bassi (es. 350) = edit sottile solo nei dettagli. Valori alti (es. 800) = edit più strutturale. Alzare troppo rischia artefatti.
+The pipeline downloads the following weights on first use (HuggingFace
+cache):
 
-**`slider_scale`** — Sopra ~3.0 si vedono artefatti fuori dalla maschera anche con feathering. Per risultati naturali stare tra 1.0 e 2.5.
+- `stabilityai/stable-diffusion-xl-base-1.0`
+- `h94/IP-Adapter`, with
+  `sdxl_models/ip-adapter-plus_sdxl_vit-h.safetensors` and
+  `models/image_encoder/`.
 
-**Memoria GPU** — SDXL UNet (float16) + VAE (float32) + IP-Adapter + ViT-H encoder richiedono ~14–16 GB. I job SLURM richiedono 24 GB.
+If running offline, make sure both are present in the local cache
+before submitting the job.
 
----
+## References
 
-## Setup HPC (una-tantum)
-
-```bash
-export HF_HOME=/home/<your-username>/FERT_PROJECT/Caches_and_venvs/hf_cache
-export HF_HUB_CACHE=/home/<your-username>/FERT_PROJECT/Caches_and_venvs/hf_cache/hub
-```
-
-Modelli necessari in cache:
-- `models--stabilityai--stable-diffusion-xl-base-1.0`
-- `models--h94--IP-Adapter` (con `sdxl_models/ip-adapter-plus_sdxl_vit-h.safetensors` e `models/image_encoder/`)
-
----
-
-## Riferimento paper
-
-Tight Inversion è adattato da:
-
-> Kadosh et al., *"Tight Inversion: Image-Conditioned Inversion for Real Image Editing"*,  
-> arXiv:2502.20376, ICCV 2025 Workshop.
+- Tight Inversion: Kadosh et al., 2025, arXiv:2502.20376
+- IP-Adapter: Ye et al., 2023, arXiv:2308.06721

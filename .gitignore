@@ -2,23 +2,23 @@
 # .gitignore — local-concept-sliders
 # =============================================================================
 
-# --- Pesi LoRA / sliders trainati (grandi, rigenerabili dal training) ---
+# --- Trained LoRA weights / sliders (large, regenerable from training) ---
 *.pt
 *.safetensors
 
-# --- SAM / pretrained models (multi-GB, scaricabili) ---
+# --- SAM / pretrained models (multi-GB, downloadable) ---
 *.pth
 mask_SAM/checkpoints/
 
-# --- Logs SLURM (stdout/stderr) ---
-# Le cartelle logs/ esistono nella repo (con .gitkeep) ma il loro contenuto no.
+# --- SLURM logs (stdout/stderr) ---
+# The logs/ directories exist in the repo (with .gitkeep) but their content does not.
 **/logs/*
 !**/logs/.gitkeep
 
-# --- Cache PEFT (auto-generata, ricreabile) ---
+# --- PEFT cache (auto-generated, recreatable) ---
 **/_peft_cache/
 
-# --- Config personali HPC (ognuno ha il suo, NON committare) ---
+# --- Personal HPC config (each user has their own, DO NOT commit) ---
 tools/set_slurms.sh
 tools/pull_config.sh
 
@@ -36,7 +36,7 @@ venv*/
 env/
 ENV/
 
-# --- HuggingFace cache locale (se mai dovesse finire in repo) ---
+# --- Local HuggingFace cache (in case it ever ends up in the repo) ---
 .hf_cache/
 hf_cache/
 
@@ -54,25 +54,42 @@ hf_cache/
 *.swo
 *~
 
-# --- Job personali (non condividere) ---
+# --- Personal jobs (not shared) ---
 sdxl/tasks/masked_lora/jobs/personal/
 sdxl/tasks/selectivity/jobs/personal/
 flux/trained_sliders/training/jobs/personal/
 flux/tasks/masked_lora/jobs/personal/
 
-# --- Reference material (notebook originali, non parte del progetto) ---
+# --- Reference material (original notebooks, not part of the project) ---
 flux/trained_sliders/training/reference/
 
-# --- Cartella maschere SAM locali (distribuite nelle run dir via place_masks.py) ---
+# --- Local SAM masks (distributed into run dirs via place_masks.py) ---
 masks_output/
 
-# --- Contenuto delle run dir (immagini PNG grandi — trasferire con CyberDuck) ---
-# Le dir runs/ esistono con .gitkeep, ma le eval_* subdirectory sono generate su HPC.
+# --- Run directory contents (large PNG images — transferred separately) ---
+# The runs/ dirs exist with .gitkeep, but the eval_* subdirectories are generated on HPC.
 sdxl/tasks/masked_lora/runs/eval_*/
 sdxl/tasks/selectivity/runs/eval_*/
 flux/tasks/masked_lora/runs/eval_*/
-flux/tasks/shop_concept/runs/eval_*/
 
-# --- File temporanei ---
+# --- Temporary files ---
 *.bak
 *.tmp
+
+# --- Paper PDFs (kept locally only, not part of the code submission) ---
+2311.12092v2.pdf
+2505.23758v1.pdf
+
+# --- Paper template directory (not part of the code submission) ---
+author-kit-CVPR2026-v1-latex-/
+
+# --- Local working screenshots / paper figure drafts (kept locally only) ---
+img paper/
+paper_foto_masked/
+paper_foto_achored/
+
+# --- Final sliders used in paper experiments (whitelist) ---
+!sdxl/trained_sliders/sliders/general/**/*.safetensors
+!sdxl/trained_sliders/sliders/anchored/**/*.safetensors
+!flux/trained_sliders/sliders/general/**/*.pt
+!flux/trained_sliders/sliders/anchored/**/*.pt

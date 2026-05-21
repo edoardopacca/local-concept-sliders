@@ -1,7 +1,0 @@
-{
-  "phase": "masked_edit",
-  "output_image": "edited_furlength_s3.0.png",
-  "slider_path": "sdxl/trained_sliders/sliders/furlength_pet_sdxl_v1_alpha1.0_rank4_noxattn/furlength_pet_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors",
-  "slider_scale": 3.0,
-  "start_noise": 750
-}

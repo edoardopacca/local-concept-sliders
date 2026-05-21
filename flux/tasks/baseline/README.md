@@ -1,36 +1,47 @@
-# flux/tasks/baseline
+# `flux/tasks/baseline/`
 
-**Generazione + applicazione base** di un concept slider Flux.1-dev.
+Exploratory task: generate images with Flux.1-dev and apply a trained
+slider globally over a sweep of scales. Used during development as a
+sanity check on each newly trained slider (dose-response, baseline
+behaviour, ethnicity / age coverage). Not directly reported in the
+paper; the `outputs/` directory is populated locally by each run.
 
-Genera un set di immagini con Flux e applica uno slider trainato a varie `lora_scales` per visualizzare l'effetto. Niente segmentation, niente masking, niente real image editing — solo "prompt + slider + sweep di scale".
+The generation script (`scripts/generate_flux_slider.py`) loads the Flux
+pipeline, applies one or more LoRA adapters and iterates over a list of
+(prompt, seed, scale) combinations.
 
-## Cosa fa
+## Origin
 
-Sotto il cofano riusa `flux/trained_sliders/training/scripts/generate_flux_slider.py`:
-- Carica Flux.1-dev base
-- Carica uno o più LoRA da `--lora_dirs`
-- Genera N immagini per ogni combinazione (prompt × seed × scale)
-- Salva in `--save_dir`
+The script is a thin wrapper around the Flux pipeline implementation in
+[`flux/core/custom_flux_pipeline.py`](../../core/custom_flux_pipeline.py)
+(adapted from diffusers) and the LoRA stack in
+[`flux/core/lora.py`](../../core/lora.py) (adapted from the upstream
+Concept Sliders codebase).
 
-## Quando usarlo
+## Layout
 
-- Verificare visivamente l'effetto di uno slider Flux appena trainato
-- Sweep di scale per vedere la dose-response
-- Confronto multi-prompt
-
-## Lancio
-
-```bash
-sbatch flux/tasks/baseline/jobs/run_baseline.slurm
+```
+flux/tasks/baseline/
+├── scripts/
+│   ├── generate_flux.py            # unedited Flux baseline (no slider)
+│   └── generate_flux_slider.py     # Flux + one or more sliders, scale sweep
+├── jobs/
+│   └── new_slurm/                  # SLURM templates for the baseline sweeps
+└── outputs/                        # per-run subdirectories (populated locally)
 ```
 
-Customizza dentro lo SLURM:
-- `LORA_DIR` — path alla cartella dello slider trainato (`flux/trained_sliders/sliders/<nome>/`)
-- `PROMPT` — testo di generazione
-- `SCALES` — lista di scale
-- `SEEDS` — seed
-- `SAVE_DIR` — output dir (default sotto `flux/tasks/baseline/outputs/`)
+## Usage
 
-## Output
+```bash
+sbatch flux/tasks/baseline/jobs/new_slurm/<your-template>.slurm
+```
 
-`flux/tasks/baseline/outputs/<run_name>/` contiene un PNG per ogni combinazione (scale, seed, prompt).
+Customise inside the SLURM template:
+
+- `LORA_DIR` — path to the slider directory under `flux/trained_sliders/sliders/`
+- `PROMPT` — generation prompt
+- `SCALES` — sweep range
+- `SEEDS` — seed list
+- `SAVE_DIR` — output directory
+
+Output: one PNG per (prompt, seed, scale) combination under `SAVE_DIR`.

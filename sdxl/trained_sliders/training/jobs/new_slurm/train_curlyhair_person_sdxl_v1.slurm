@@ -12,7 +12,7 @@
 # =============================================================================
 # train_curlyhair_person_sdxl_v1.slurm
 # =============================================================================
-# Curly hair slider for ALL persons (baseline, gender-agnostic).
+# Curly hair slider — general, trained on prompts covering both genders.
 #
 # Setup:
 #   - 10 entries: 5 ethnicities x 2 genders
@@ -40,7 +40,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 echo "================================================================"
-echo "=== FASE 1: TRAINING curlyhair_person_sdxl_v1                ==="
+echo "=== PHASE 1: TRAINING curlyhair_person_sdxl_v1                ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -53,14 +53,14 @@ python sdxl/trained_sliders/training/scripts/train.py \
     --device 0
 
 echo ""
-echo "=== Training completato ==="
+echo "=== Training completed ==="
 SLIDER_DIR="sdxl/trained_sliders/sliders/curlyhair_person_sdxl_v1_alpha1.0_rank4_noxattn"
 SLIDER="${SLIDER_DIR}/curlyhair_person_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors"
 ls -lh "$SLIDER_DIR"
 
 echo ""
 echo "================================================================"
-echo "=== FASE 2: TEST POST-TRAINING                                ==="
+echo "=== PHASE 2: POST-TRAINING TEST                                ==="
 echo "================================================================"
 
 TEST_ROOT="sdxl/tasks/baseline/outputs/curlyhair_person_sdxl_v1_test"
@@ -90,7 +90,7 @@ run_test "a close-up portrait, sharp focus, neutral background"                "
 
 echo ""
 echo "================================================================"
-echo "=== JOB COMPLETATO                                            ==="
+echo "=== JOB COMPLETED                                            ==="
 echo "=== Output slider: ${SLIDER_DIR}                              ==="
 echo "=== Output test:   ${TEST_ROOT}                               ==="
 echo "================================================================"

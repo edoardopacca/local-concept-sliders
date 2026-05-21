@@ -12,8 +12,8 @@
 # =============================================================================
 # phase3_two_subjects_compose.slurm
 # =============================================================================
-# Phase 3 multi-mask multi-LoRA: 2 maschere (man, woman), per ogni
-# regione si compongono additivamente piu' slider (paper-style).
+# Phase 3 multi-mask multi-LoRA: 2 masks (man, woman), one per
+# several sliders compose additively inside each region (paper-style).
 #
 # Config esempio:
 #   * Maschere SAM (gia' nella run_dir):
@@ -22,8 +22,8 @@
 #   * Sliders + mapping:
 #       slider 0 (smile)  -> mask 0 (man)
 #       slider 1 (age)    -> mask 0 (man)
-#       slider 2 (smile)  -> mask 1 (woman)   [stesso file, scale negativa]
-#       slider 3 (age)    -> mask 1 (woman)   [stesso file, scale negativa]
+#       slider 2 (smile)  -> mask 1 (woman)   [same file, negative scale]
+#       slider 3 (age)    -> mask 1 (woman)   [same file, negative scale]
 #   * Scale (smile_man, age_man, smile_woman, age_woman):
 #       1.5  1.5  -1.5  -1.5
 #     -> uomo sorride/ringiovanisce, donna corrucciata/invecchia.
@@ -32,8 +32,8 @@
 # 30 step ~3 min su A100. Load Flux ~5-7 min. Totale ~10 min.
 #
 # PRIMA DI LANCIARE:
-#   1. Aggiorna RUN_ID con quello della tua phase 1 (cartella outputs/<...>).
-#   2. Sul Mac, prepara le 2 maschere SAM:
+#   1. Update RUN_ID con quello della tua phase 1 (cartella outputs/<...>).
+#   2. On the local machine, prepare the 2 SAM masks:
 #        python mask_SAM/segment_with_sam.py --run_dir <run_dir> \
 #          --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
 #          --image_name base.png --mode interactive --output_name mask_man.png
@@ -60,15 +60,15 @@ mkdir -p flux/tasks/masked_lora/logs flux/tasks/masked_lora/_peft_cache
 # -----------------------------------------------------------------------------
 # CONFIG
 # -----------------------------------------------------------------------------
-RUN_ID="two_subjects_masked_20260424_1910"   # <-- aggiorna se cambi base
+RUN_ID="two_subjects_masked_20260424_1910"   # <-- update when regenerating the base
 
 SLIDER_SMILE="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 SLIDER_AGE="flux/trained_sliders/sliders/age_flux_v1_symmetric_rank16_xattn_alpha1/flux-age_flux_v1_symmetric/slider_0.pt"
 
-# 2 maschere disgiunte
+# 2 disjoint masks
 MASK_NAMES=(mask_man.png mask_woman.png)
 
-# 4 slider PEFT (smile e age caricati 2 volte, una per regione)
+# 4 PEFT adapters (smile and age each loaded twice, one per region)
 SLIDER_PATHS=("$SLIDER_SMILE" "$SLIDER_AGE" "$SLIDER_SMILE" "$SLIDER_AGE")
 SLIDER_TO_MASK=(0 0 1 1)
 

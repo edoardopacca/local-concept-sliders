@@ -12,9 +12,9 @@
 # =============================================================================
 # run_eval_metrics.slurm  (Flux)
 # =============================================================================
-# Calcola LPIPS + CLIP localization per tutti i 6 concept Flux.
+# Compute LPIPS + CLIP localization for all 6 Flux concepts.
 #
-# Uso:
+# Usage:
 #   sbatch flux/tasks/masked_lora/jobs/new_slurm/run_eval_metrics.slurm
 #
 # Per un solo concept:
@@ -40,7 +40,7 @@ OUTPUT_DIR="$FERT_REPO/metrics/results_flux_masked"
 echo "================================================================"
 echo "=== eval_metrics Flux  concept=${CONCEPT}                   ==="
 echo "================================================================"
-nvidia-smi || echo "[WARNING] nvidia-smi non disponibile"
+nvidia-smi || echo "[WARNING] nvidia-smi not available"
 echo ""
 
 if [ "$CONCEPT" = "all" ]; then
@@ -61,7 +61,7 @@ else
 fi
 
 echo "================================================================"
-echo "=== eval_metrics Flux COMPLETATO                            ==="
+echo "=== eval_metrics Flux COMPLETED                            ==="
 echo "=== Output: ${OUTPUT_DIR}/{concept}/eval_aggregate.json    ==="
 echo "================================================================"
 

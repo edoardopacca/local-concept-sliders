@@ -12,11 +12,11 @@
 # =============================================================================
 # run_eval_metrics.slurm
 # =============================================================================
-# Calcola LPIPS_in/out, Localization Score CLIP, Attribute Score per tutti
-# e 6 concept. Accetta --concept come argomento (default: tutti).
+# Compute LPIPS_in/out, CLIP localization, attribute score for all
+# 6 concepts. Accepts --concept as an argument (default: all).
 #
 # Usage:
-#   sbatch run_eval_metrics.slurm                      # tutti i concept
+#   sbatch run_eval_metrics.slurm                      # all concepts
 #   sbatch --export=CONCEPT=smile_person run_eval_metrics.slurm  # uno solo
 # =============================================================================
 
@@ -65,7 +65,7 @@ else
 fi
 
 echo "================================================================"
-echo "=== eval_metrics COMPLETATO                                 ==="
+echo "=== eval_metrics COMPLETED                                 ==="
 echo "=== Output: ${OUTPUT_DIR}/{concept}/eval_aggregate.json    ==="
 echo "================================================================"
 

@@ -1,7 +1,0 @@
-{
-  "phase": "masked_edit",
-  "output_image": "edited_vangogh_s3.0.png",
-  "slider_path": "sdxl/trained_sliders/sliders/vangogh_sdxl_v2_alpha1.0_rank16_noxattn/vangogh_sdxl_v2_alpha1.0_rank16_noxattn_last.safetensors",
-  "slider_scale": 3.0,
-  "start_noise": 700
-}

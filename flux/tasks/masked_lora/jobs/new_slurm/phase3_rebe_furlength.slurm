@@ -11,17 +11,22 @@
 #SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
 # =============================================================================
-# phase3_rebe_furlength.slurm
+# phase3_rebe_furlength.slurm  —  OBSOLETE (cannot run as-is)
 # =============================================================================
-# Phase 3 masked LoRA — furlength × 20 run — per Rebe.
-# Prerequisiti in RUNS_ROOT:
+# Phase 3 masked LoRA — furlength × 20 runs.
+#
+# This template points at a subject-specific Flux fur-length slider
+# (`furlength_dog_flux_v1`) whose training prompt YAML has been removed
+# from the repository, so the job cannot be re-run from a clean
+# checkout. It is retained only because deleting it would require also
+# editing surrounding code paths. Repointing the slider path at the
+# general `furlength_pet` slider would be a one-line code edit.
+#
+# Prerequisites in RUNS_ROOT:
 #   eval_furlength_{01..20}/base.png + mask_target.png + metadata.json
 #
-# Pesi richiesti (in $FERT_REPO):
-#   trial_v1 : flux/trained_sliders/sliders/trial_v1/furlength_dog_flux_v1/flux-furlength_dog_flux_v1/slider_0.pt
-#
-# Output per ogni run:
-#   edited_furlength_t_s{1,2,3}.png   (trial_v1)
+# Output per run:
+#   edited_furlength_t_s{1,2,3}.png
 # =============================================================================
 
 set -euo pipefail
@@ -43,7 +48,7 @@ T_ROOT="$FERT_REPO/flux/trained_sliders/sliders/trial_v1"
 mkdir -p flux/tasks/masked_lora/logs "$CACHE_DIR"
 
 echo "================================================================"
-echo "=== PHASE 3 — furlength × 20 run — Rebe                  ==="
+echo "=== PHASE 3 — furlength × 20 run                  ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -86,6 +91,6 @@ run_concept "furlength" \
     "furlength_t" "1 2 3"
 
 echo "================================================================"
-echo "=== PHASE 3 furlength COMPLETATA                          ==="
+echo "=== PHASE 3 furlength COMPLETED                          ==="
 echo "  furlength_t (trial_v1) : s1, s2, s3"
 echo "================================================================"

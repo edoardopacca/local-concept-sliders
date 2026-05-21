@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=eval_smile_f_masked_flux
-#SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
 #SBATCH --gpus=1
@@ -29,7 +28,7 @@ echo "=== Masked LoRA eval — smile_f (Flux) — scale 1, 2, 3 ==="
 nvidia-smi
 echo ""
 
-# rimuovi output precedenti (sia smile_person base che smile_person_f)
+# Remove previous outputs (both smile_person base and smile_person_f)
 rm -rf metrics/results_flux_masked/smile_person metrics/results_flux_masked/smile_person_f
 
 python metrics/eval_masked.py \

@@ -1,27 +1,26 @@
-# vangogh_sdxl_v2.yaml
+# SDXL style slider v2: realism -> Van Gogh style (global, not only sky).
 #
-# Style slider SDXL v2: direzione realismo → stile Van Gogh (globale, non solo cielo).
-#
-# CAMBIAMENTI rispetto a v1:
-#   - guidance_scale: 4 (era 1 → direzione troppo debole)
-#   - target/neutral NEUTRI: "a landscape", "a portrait", ecc.
-#     (v1 usava "a village with a night sky" → già pittorici, nessun delta)
-#   - stile generale Van Gogh (non solo sky), coerente con vangogh_flux_v1
-#   - 10 soggetti diversi: landscape, portrait, still life, wheat field,
+# Changes vs v1:
+#   - guidance_scale: 4 (was 1 -> direction too weak)
+#   - NEUTRAL target/neutral: "a landscape", "a portrait", ...
+#     (v1 used "a village with a night sky", already pictorial, so the
+#      delta was small)
+#   - General Van Gogh style (not only sky), consistent with vangogh_flux_v1
+#   - 10 different subjects: landscape, portrait, still life, wheat field,
 #     starry night, cafe, cypress, village street, vase of flowers, mountain
 #
-# Direzione appresa:
-#   positive      = soggetto in stile Van Gogh (impasto, pennellate, post-impressionismo)
-#   unconditional = soggetto fotografico/realistico
-#   target/neutral = soggetto neutro (nessun descrittore di stile)
+# Learned direction:
+#   positive       = subject in Van Gogh style (impasto, brushstrokes, post-impressionist)
+#   unconditional  = photographic / realistic subject
+#   target/neutral = neutral subject (no style descriptor)
 #
-# Interpretazione scale a inferenza:
-#   scale > 0  →  stile Van Gogh
-#   scale < 0  →  iper-fotografico/realistico
-#   scale = 0  →  modello base
+# Inference interpretation of the scale:
+#   scale > 0  ->  Van Gogh style
+#   scale < 0  ->  hyper-photographic / realistic
+#   scale = 0  ->  base model
 #
-# guidance_scale: 4  — match paper originale Gandikota et al., forza direzione 4×.
-# rank 16            — stile visivo complesso, rank 4 insufficiente.
+# guidance_scale: 4  -- matches the original Concept Sliders setup, 4x boost.
+# rank 16            -- complex visual style; rank 4 was insufficient.
 
 - target: "a landscape"
   positive: "a landscape in the style of Van Gogh, impasto, swirling brushstrokes, vibrant colors, post-impressionist painting"

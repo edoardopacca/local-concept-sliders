@@ -1,15 +1,14 @@
 # ============================================================================
 # requirements-sdxl.lock
 # ============================================================================
-# Snapshot esatto del venv "sliders" (SDXL training) al
-# 2026-04-19 alle ~03:00, git commit 127f3c0.
+# Exact snapshot of the SDXL training venv (2026-04-19 ~03:00, git
+# commit 127f3c0).
 #
 # Python: 3.9.21
-# Venv originale: ~/Linux4HPC/venvs/sliders
-# CUDA: torch 2.0.1+cu117 (usa libs bundled nvidia-*-cu11, nessun module load
-#       necessario per runtime; bitsandbytes 0.41.1 funziona con queste libs)
+# CUDA:   torch 2.0.1+cu117 (uses bundled nvidia-*-cu11 libs at runtime,
+#         no module load required; bitsandbytes 0.41.1 works with these libs).
 #
-# Per ricreare:
+# To recreate:
 #   source $NEW_VENV/bin/activate
 #   pip install -r requirements-sdxl.lock
 #

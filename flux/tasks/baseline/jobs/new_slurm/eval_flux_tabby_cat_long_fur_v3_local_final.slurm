@@ -10,6 +10,17 @@
 #SBATCH --output=flux/tasks/baseline/logs/%x_%j.out
 #SBATCH --error=flux/tasks/baseline/logs/%x_%j.err
 
+# =============================================================================
+# eval_flux_tabby_cat_long_fur_v3_local_final.slurm  —  OBSOLETE (cannot run)
+# =============================================================================
+# This job evaluated a subject-specific Flux slider whose training
+# prompt YAML has been removed from the repository. It is retained only
+# because deleting it would require also editing surrounding code paths.
+# The current paper proposes a single method — external mask-guided
+# localization of a LoRA adapter at inference time (§4) — and does not
+# include a subject-specific training variant.
+# =============================================================================
+
 set -euo pipefail
 
 source "$SLURM_SUBMIT_DIR/tools/set_slurms.sh"

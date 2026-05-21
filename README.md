@@ -1,218 +1,396 @@
-# local-concept-sliders
+# Where to Apply — Code Release
 
-Repository per **training**, **generazione** e **editing** con concept sliders LoRA su **SDXL** e **Flux.1-dev**, eseguito su HPC via SLURM.
+Reference implementation accompanying the project for the course
+**Deep Learning and Reinforcement Learning**,
+**"Where to Apply: Mask-Guided Localization of LoRA Adapter Effects in
+Diffusion Models"** (F. Ferrari, T. Errico, E. Paccagnella, R. Rinero —
+Bocconi University).
 
-## Struttura
+The repository implements a method that, at inference time, restricts
+the effect of a LoRA adapter to a region of the image provided as an
+external mask, by blending the LoRA-on and LoRA-off denoising
+predictions inside and outside the mask at every step (the per-step
+blend in eq. (1) of §4). The method is **tested on Concept Sliders**
+(Gandikota et al., 2023) — i.e. on LoRA adapters trained as continuous
+attribute knobs — on two text-to-image backbones (SDXL and Flux.1-dev).
+The contribution is at the **inference** stage; the training stage
+uses the upstream Concept Sliders recipe unchanged.
+
+Alongside the main method, the repository also bundles:
+
+- a **LoRAShop adaptation** that derives the mask from the model's own
+  cross-attention instead of from an external segmentation (Appendix D);
+- a **real-image verification** that plugs the same masked-edit
+  operator on top of a Tight-Inversion latent (§1).
+
+Localization quality is evaluated with the region-aware LPIPS and CLIP
+variants defined in §5.1 (equations (2) and (3) of the paper).
+
+> 📦 **Note.** The hand-drawn SAM masks and the full set of generated
+> evaluation images are **not committed to this repository** because of
+> their size. The **quantitative results** derived from them are
+> committed under [`metrics/results_*/`](metrics/), and the
+> **qualitative figures** used in the paper (selected from the
+> evaluation set) are committed under
+> [`paper_figures/`](paper_figures/). All the **prompts and seeds**
+> used in the evaluation are present in the repository. If the raw
+> evaluation images / masks are needed, please contact any of the
+> authors of the paper and we will provide them directly.
+
+---
+
+## Table of contents
+
+1. [Repository layout](#repository-layout)
+2. [Setup](#setup)
+3. [Reproducing the experiments](#reproducing-the-experiments)
+   - [External mask-guided application (§4)](#1-external-mask-guided-application-4)
+   - [LoRAShop adaptation, internal-mask alternative (Appendix D)](#2-lorashop-adaptation-internal-mask-alternative-appendix-d)
+   - [Real-image verification via Tight Inversion (§1)](#3-real-image-verification-via-tight-inversion-1)
+4. [Evaluation and results folder](#evaluation-and-results-folder)
+5. [HPC / SLURM templates](#hpc--slurm-templates)
+6. [Acknowledgments](#acknowledgments)
+7. [License](#license)
+
+---
+
+## Repository layout
+
+The repository mirrors the two backbones under `sdxl/` and `flux/`, with a shared
+mask-extraction stage under `mask_SAM/` and a shared evaluation stage under `metrics/`.
 
 ```
 local-concept-sliders/
-├── sdxl/
-│   ├── core/                                # libreria condivisa SDXL
-│   │   └── lora.py, train_util.py, prompt_util.py, ...
+├── sdxl/                                # SDXL base 1.0 stack
+│   ├── core/                            # Concept-Sliders LoRA core (adapted)
+│   │   ├── lora.py                      # LoRANetwork / LoRAModule
+│   │   ├── train_util.py                # diffusion + CFG helpers
+│   │   ├── model_util.py                # model loading
+│   │   ├── prompt_util.py               # prompt-pair training objective
+│   │   └── config_util.py               # YAML config schema
 │   ├── trained_sliders/
-│   │   ├── training/                        # framework di training SDXL
-│   │   │   ├── scripts/  configs/  prompts/{old,new,test}_prompt/
-│   │   │   ├── jobs/{old,new,test}_slurm/   logs/
-│   │   └── sliders/                         # .pt/.safetensors (gitignored)
+│   │   ├── training/                    # slider training entrypoint
+│   │   │   ├── scripts/                 # train.py (upstream Concept Sliders)
+│   │   │   ├── configs/                 # one YAML per slider
+│   │   │   └── prompts/                 # target / positive / unconditional triples
+│   │   └── sliders/                     # trained .pt outputs (whitelist under general/)
 │   └── tasks/
-│       ├── baseline/                        # generazione + sweep slider
-│       │   ├── scripts/  jobs/{old,new,test}_slurm/  logs/  outputs/
-│       ├── masked_lora/                     # generazione + segmentazione + masked edit
-│       ├── masked_lora_editing/             # masked editing su immagini reali
-│       └── real_editing/                    # tight inversion + masked LoRA
-│           ├── scripts/  jobs/{old,new,test}_slurm/  logs/  outputs/
-│           └── lib/{models,inversion,editing,io,archive}/
+│       ├── baseline/                    # global slider application, dose-response
+│       ├── masked_lora/                 # §4 external mask-guided pipeline
+│       ├── real_editing/                # §1 Tight-Inversion-based real editing
+│       └── masked_lora_editing/         # earlier SD1.4 real-edit prototype (superseded)
 │
-├── flux/                                    # stessa struttura di sdxl/
-│   ├── core/
-│   ├── trained_sliders/{training/, sliders/}
+├── flux/                                # Flux.1-dev stack, mirrors sdxl/
+│   ├── core/                            # LoRA core ported to Flux MM-DiT attention
+│   ├── trained_sliders/{training,sliders}/
 │   └── tasks/
-│       ├── baseline/                        # generazione Flux + slider sweep
-│       ├── masked_lora/                     # ex masked_Lora_FLUX
-│       └── shop_concept/                    # multi-LoRA mask-aware
-│           ├── scripts/  jobs/  outputs/
-│           └── lib/{flux_blocks,flux_real_pipeline,utils}.py
+│       ├── baseline/                    # global slider application
+│       ├── masked_lora/                 # §4 external mask-guided pipeline (Flux)
+│       └── shop_concept/                # Appendix D LoRAShop internal-mask variant
 │
-├── mask_SAM/                                # SAM checkpoint + script (cross-arch)
-│   ├── checkpoints/sam_vit_h_4b8939.pth     # gitignored, 2.4 GB
-│   └── segment_with_sam.py                  # CLI usato dal Mac in modalità interattiva
+├── mask_SAM/                            # SAM (ViT-H) wrappers used at Phase 2
+│   ├── segment_with_sam.py              # single-image SAM CLI
+│   ├── choose_masks.py                  # batch interactive masking
+│   ├── place_masks.py                   # copy masks into the per-run directories
+│   └── checkpoints/                     # SAM weights, downloaded on first use
 │
-├── metrics/                                 # eval CLIP/LPIPS (cross-arch)
+├── metrics/                             # paper §5 metrics and aggregations
+│   ├── eval_masked.py                   # LPIPS_LOC / CLIP_LOC (§5.1)
+│   ├── summarize_masked.py              # per-concept LPIPS_LOC / CLIP_LOC medians
+│   ├── select_best_runs.py              # pick top-k qualitative samples
+│   └── results_*/                       # CSV + aggregate JSON per concept
 │
-├── tools/                                   # config personali + script sync HPC↔Mac
-│   ├── set_slurms.sh.example                # template config HPC (per gli SLURM)
-│   ├── set_slurms.sh                        # config tua HPC (gitignored)
-│   ├── pull_config.sh.example               # template config Mac (per i sync script)
-│   ├── pull_config.sh                       # config tua Mac (gitignored)
-│   ├── pull_from_hpc.sh                     # HPC → Mac: sliders + outputs (incrementale)
-│   └── push_to_hpc.sh                       # Mac → HPC: tutti gli .slurm (incrementale)
+├── tools/                               # optional HPC sync utilities (templates)
+│   ├── set_slurms.sh.example            # per-user HPC environment template
+│   ├── pull_config.sh.example           # per-user local environment template
+│   ├── push_to_hpc.sh                   # rsync local → HPC (slurm + configs)
+│   └── pull_from_hpc.sh                 # rsync HPC → local (sliders + outputs)
 │
-├── .gitignore   .venv_sam/   __init__.py   README.md
+└── README.md
 ```
 
-## Dove trovare cosa
+Each `<arch>/tasks/<task>/` follows the same convention:
 
-| Cosa cerchi | Path |
-|---|---|
-| Libreria LoRA SDXL (`LoRANetwork`, `train_util`, ...) | `sdxl/core/` |
-| Libreria LoRA Flux (`LoRANetwork`, `custom_flux_pipeline`, ...) | `flux/core/` |
-| Sliders SDXL pre-trained (smiling, age, muscular, ...) | `sdxl/trained_sliders/sliders/` |
-| Sliders Flux trainati | `flux/trained_sliders/sliders/` |
-| Checkpoint SAM | `mask_SAM/checkpoints/sam_vit_h_4b8939.pth` |
-| Script SAM segmentation (cross-arch) | `mask_SAM/segment_with_sam.py` |
-| Eval scripts (CLIP/LPIPS) | `metrics/` |
-| Script sync HPC ↔ Mac | `tools/pull_from_hpc.sh`, `tools/push_to_hpc.sh` |
-
-## Workflow HPC
-
-La repo è la stessa per tutti (clone Git identico). Ogni utente ha **path personali** su HPC (repo, venv/conda, cache HF). Tutto questo è centralizzato in `tools/set_slurms.sh` (gitignored, ognuno crea il suo dal template).
-
-### First-time setup HPC
-
-```bash
-ssh hpc                                        # da Mac (alias SSH configurato in ~/.ssh/config)
-
-cd /home/<your-username>                       # vai nella tua home
-git clone https://github.com/edoardopacca/local-concept-sliders.git
-cd local-concept-sliders
-
-# 1. Crea il tuo file di config HPC
-cp tools/set_slurms.sh.example tools/set_slurms.sh
-nano tools/set_slurms.sh
-# modifica: FERT_REPO, FERT_HF_CACHE, activate_flux_env(), activate_sdxl_env()
-
-# 2. Crea le cartelle dei pesi (gitignored, non vengono dal clone)
-mkdir -p sdxl/trained_sliders/sliders flux/trained_sliders/sliders
-
-# 3. Setup env Python (venv o conda — vedi requirements-*.lock nelle training/)
+```
+<task>/
+├── scripts/      # Python entrypoints
+├── jobs/new_slurm/  # SLURM templates used for the paper experiments
+├── logs/         # SLURM stdout/stderr (git-ignored except .gitkeep)
+├── outputs/      # per-run artefacts (populated locally, .gitkeep placeholder)
+└── README.md     # task-level documentation
 ```
 
-### First-time setup Mac (per usare gli script di sync)
+All Python imports are absolute from the repository root (e.g.
+`from sdxl.core.lora import LoRANetwork`); every entrypoint must be launched
+with the repository root on `PYTHONPATH` (the bundled SLURM templates do this
+via `cd $SLURM_SUBMIT_DIR`).
+
+---
+
+## Setup
+
+### Requirements
+
+The two backbones use different libraries and are best installed in separate
+environments.
+
+| Backbone | Lockfile | Notes |
+|---|---|---|
+| SDXL | `sdxl/trained_sliders/training/requirements-sdxl.lock` | PyTorch + diffusers; CUDA 12.1 wheels |
+| Flux.1-dev | `flux/trained_sliders/training/requirements-flux.lock` | PyTorch + diffusers + PEFT; tested with `torch==2.4.1+cu124` |
+
+Reference installation scripts are provided as starting points:
 
 ```bash
-cd ~/Desktop/local-concept-sliders
-cp tools/pull_config.sh.example tools/pull_config.sh
-nano tools/pull_config.sh
-# modifica: HPC_USER, HPC_HOST, HPC_REPO
+# SDXL: standard pip install from the lockfile
+python -m venv .venv-sdxl && source .venv-sdxl/bin/activate
+pip install -r sdxl/trained_sliders/training/requirements-sdxl.lock
+
+# Flux: lockfile or the bundled venv/conda setup scripts
+python -m venv .venv-flux && source .venv-flux/bin/activate
+pip install -r flux/trained_sliders/training/requirements-flux.lock
+# alternative: ./flux/trained_sliders/training/setup_flux_venv.sh
+# alternative: ./flux/trained_sliders/training/setup_sliders_flux_conda.sh
 ```
 
-### Workflow giornaliero
+The local SAM stage has a separate, lightweight environment:
 
 ```bash
-# 1. Modifichi codice/SLURM sul Mac
-git add -A && git commit -m "..." && git push     # sul Mac
-
-# 2. Su HPC, prendi gli aggiornamenti
-ssh hpc 'cd /home/<your-username>/FERT_PROJECT/local-concept-sliders && git pull'
-
-# 3. (Opzionale) Sincronizza solo gli .slurm senza passare da git
-./tools/push_to_hpc.sh new                        # sul Mac
-
-# 4. Lancia il job (su HPC, dalla repo root)
-ssh hpc
-cd /home/<your-username>/FERT_PROJECT/local-concept-sliders
-sbatch sdxl/tasks/baseline/jobs/new_slurm/myjob.slurm
-
-# 5. Quando il job finisce, scarica risultati sul Mac
-./tools/pull_from_hpc.sh                          # sul Mac (sliders + outputs)
+python -m venv .venv-sam && source .venv-sam/bin/activate
+pip install torch torchvision numpy pillow matplotlib
+pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 
-> **Nota**: gli SLURM hanno `source $SLURM_SUBMIT_DIR/tools/set_slurms.sh` quindi `sbatch` va lanciato sempre **dalla root della repo**.
->
-> SLURM userà l'**account default** dell'utente loggato (verifica con `sacctmgr show user $USER format=user,defaultaccount`).
+### Pretrained checkpoints
 
-## Entry-point principali
+The following weights are downloaded on first use (HuggingFace cache) or must be
+placed under the indicated path. None of these are committed to the repository.
 
-I job SLURM esistenti sono in `<task>/jobs/old_slurm/`. I nuovi vanno in `new_slurm/`, gli sperimentali in `test_slurm/`.
+| Checkpoint | Used by | Source |
+|---|---|---|
+| `stabilityai/stable-diffusion-xl-base-1.0` | SDXL backbone | HuggingFace |
+| `black-forest-labs/FLUX.1-dev` | Flux backbone | HuggingFace (gated) |
+| `h94/IP-Adapter` (`ip-adapter-plus_sdxl_vit-h.safetensors` + ViT-H image encoder) | Tight Inversion (§1) | HuggingFace |
+| `sam_vit_h_4b8939.pth` (~2.4 GB) | SAM Phase 2 | `https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth` → `mask_SAM/checkpoints/` |
 
-### Training SDXL slider
+Trained slider weights produced by the experiments live under
+`<arch>/trained_sliders/sliders/`. The final sliders used by the paper
+runs are checked in under `general/` via a whitelist in `.gitignore`;
+any other slider checkpoints written under that directory are
+git-ignored and regenerated by re-running training.
+
+---
+
+## Reproducing the experiments
+
+The three code paths below cover all experiments reported in the paper.
+Every entrypoint accepts CLI flags; the bundled SLURM templates in
+`<task>/jobs/` are reference invocations and can be adapted to any GPU
+host. Run all commands from the repository root.
+
+Slider training itself uses the upstream Concept Sliders recipe
+unchanged — it is described in
+[`sdxl/trained_sliders/training/README.md`](sdxl/trained_sliders/training/README.md)
+and
+[`flux/trained_sliders/training/README.md`](flux/trained_sliders/training/README.md);
+it is **not** a contribution of this work. The paper's contribution is
+the inference-time localization that follows.
+
+### 1. External mask-guided application (§4)
+
+The mask-guided pipeline consists of three stages: generate a base scene,
+segment it externally with SAM, and re-generate with the slider gated by the
+mask using the per-step blend in eq. (1) of the paper. Each stage has a Python
+entrypoint and matching SLURM templates.
 
 ```bash
-sbatch sdxl/trained_sliders/training/jobs/old_slurm/<train_*.slurm>
-# es: train_smile_man_strong_v2_guidance4.slurm
+# Phase 1 — base generation (saves base.png + metadata.json + init_latents)
+python sdxl/tasks/masked_lora/scripts/01_generate_base.py \
+       --prompt "a woman and a man sitting at a Parisian cafe" \
+       --seed 1001 --run_id eval_age_person_01
+
+python flux/tasks/masked_lora/scripts/01_generate_base.py \
+       --prompt "<your prompt>" --seed 1001 --run_id <run>
+
+# Phase 2 — interactive SAM masking on the base image (Mac/local)
+python mask_SAM/choose_masks.py \
+       --runs_root sdxl/tasks/masked_lora/runs \
+       --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
+       --run_ids $(ls sdxl/tasks/masked_lora/runs/ | grep '^eval_')
+
+# Phase 3 — masked LoRA edit (single slider, multi-scale sweep)
+python sdxl/tasks/masked_lora/scripts/03_masked_edit.py \
+       --run_dir sdxl/tasks/masked_lora/runs/eval_age_person_01 \
+       --slider_path sdxl/trained_sliders/sliders/general/age_person/age_person.safetensors \
+       --slider_scale 2.0 --start_noise 700
 ```
-Output: `.safetensors` in `sdxl/trained_sliders/sliders/`.
 
-### Training Flux slider
+Phase 3 supports the two extensions described in §4:
+
+- **Multiple disjoint masks**, one slider each — pass `--mask_names m1.png m2.png`,
+  `--slider_paths s1.pt s2.pt`, `--slider_to_mask 0 1`, `--slider_scales 2.0 2.0`.
+- **Multiple sliders inside the same mask** — additive aggregation of LoRA updates,
+  same flags with repeated mask indices in `--slider_to_mask` (e.g. `0 0 1`).
+
+The Flux counterpart is `flux/tasks/masked_lora/scripts/03_masked_edit.py` with
+the same CLI; the only backbone-specific detail (mask packing into Flux's
+token grid) is handled internally — see §3.1 of the paper.
+
+To compute the region-aware metrics on all 20 scenes of a concept:
 
 ```bash
-sbatch flux/trained_sliders/training/jobs/old_slurm/<train_*.slurm>
-# es: train_smile_flux_v5_symmetric.slurm
+python metrics/eval_masked.py --concept age_person --device cuda
+python metrics/summarize_masked.py
 ```
-Output: `.safetensors` in `flux/trained_sliders/sliders/`.
 
-### Baseline (generazione + sweep slider)
+Outputs land under `metrics/results_sdxl_masked/<concept>/` (and
+`metrics/results_flux_masked/<concept>/` for the Flux counterpart).
+
+### 2. LoRAShop adaptation, internal-mask alternative (Appendix D)
+
+The internal-mask alternative we explored is a Flux-only pipeline that derives
+masks from the model's own cross-attention rather than from an external
+segmentation. It is bundled in `flux/tasks/shop_concept/` and described in
+[`flux/tasks/shop_concept/README.md`](flux/tasks/shop_concept/README.md).
+Our modifications on top of LoRAShop — per-slider continuous scales (the
+paper's `s_i`) and additive composition of multiple sliders inside the
+same region — are documented in the "Origin" section of that README.
+
+Minimal run:
 
 ```bash
-sbatch sdxl/tasks/baseline/jobs/old_slurm/<generate_*.slurm>
-sbatch flux/tasks/baseline/jobs/old_slurm/<generate_*.slurm>
+python flux/tasks/shop_concept/scripts/generate.py \
+       --prompt "a man standing in front of a landscape" \
+       --target_prompt "landscape" "man" \
+       --slider_paths flux/trained_sliders/sliders/general/painterly/slider_0.pt \
+                      flux/trained_sliders/sliders/general/age/slider_0.pt \
+       --lora_scales 1.0 1.0 \
+       --output_path flux/tasks/shop_concept/outputs/demo.png \
+       --seed 42
 ```
-Output: PNG in `<arch>/tasks/baseline/outputs/<run_name>/`.
 
-### Real image editing SDXL (3 fasi)
+This pipeline is the source of the qualitative example shown in
+`fig:appendix:internal-masks` of the paper.
+
+### 3. Real-image verification via Tight Inversion (§1)
+
+`sdxl/tasks/real_editing/` is a self-contained three-stage pipeline used to
+verify that the masked editing operator transfers from generated to real images.
+The inversion backend is Tight Inversion (Kadosh et al., 2025) with IP-Adapter
+conditioning; the masked-edit stage reuses the same per-step blend of §4.
 
 ```bash
-# Fase 1 — inversione tight (HPC)
-sbatch sdxl/tasks/real_editing/jobs/old_slurm/run_tight_inversion.slurm
+# Stage 1: invert a real image (SDXL + Tight Inversion + IP-Adapter)
+python sdxl/tasks/real_editing/scripts/invert_real_image.py \
+       --image path/to/photo.jpg \
+       --prompt "a portrait of a person" \
+       --run_id real_001
 
-# Fase 2 — segmentazione SAM (locale Mac, interattiva)
+# Stage 2: SAM mask on reconstruction.png (NOT on original.png)
 python mask_SAM/segment_with_sam.py \
-    --run_dir sdxl/tasks/real_editing/outputs/<RUN_ID> \
-    --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
-    --image_name reconstruction.png \
-    --mode interactive
+       --run_dir sdxl/tasks/real_editing/outputs/real_001 \
+       --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \
+       --image_name reconstruction.png --mode interactive
 
-# Fase 3 — masked LoRA edit (HPC)
-sbatch sdxl/tasks/real_editing/jobs/old_slurm/run_tight_edit.slurm
+# Stage 3: masked edit on the inverted latent
+python sdxl/tasks/real_editing/scripts/edit_real_image_masked.py \
+       --run_dir sdxl/tasks/real_editing/outputs/real_001 \
+       --slider_path sdxl/trained_sliders/sliders/general/smile_person/smile_person.safetensors \
+       --slider_scale 2.0
 ```
 
-### Masked LoRA SDXL / Flux (3 fasi)
+The earlier prototype at `sdxl/tasks/masked_lora_editing/` (real-image editing
+on SD-1.4 and SDXL via DDIM/null-text inversion) is preserved for reference but
+is superseded by `real_editing/`; it is not used in the paper.
 
-```bash
-sbatch <arch>/tasks/masked_lora/jobs/old_slurm/run_phase1.slurm   # base generation
-python mask_SAM/segment_with_sam.py --run_dir <arch>/tasks/masked_lora/outputs/<RUN_ID> ...
-sbatch <arch>/tasks/masked_lora/jobs/old_slurm/run_phase3.slurm   # masked edit
-```
+---
 
-### Shop Concept (multi-LoRA Flux mask-aware)
+## Evaluation and results folder
 
-```bash
-sbatch flux/tasks/shop_concept/jobs/old_slurm/generate_shop_concept.slurm
-sbatch flux/tasks/shop_concept/jobs/old_slurm/sweep_vangogh_sky.slurm
-```
+All quantitative results reported in the paper are reproduced by the scripts in
+`metrics/`, and aggregated outputs are committed under `metrics/results_*/`:
 
-## Sync HPC ↔ Mac (script in `tools/`)
+| Folder | Paper table | Content |
+|---|---|---|
+| `metrics/results_sdxl_masked/` | `tab:appendix:results-masked-sdxl` | External mask-guided, SDXL |
+| `metrics/results_flux_masked/` | `tab:appendix:results-masked-flux` | External mask-guided, Flux |
 
-```bash
-# Mac → HPC: pusha gli .slurm (incrementale)
-./tools/push_to_hpc.sh           # tutti
-./tools/push_to_hpc.sh new       # solo new_slurm/
-./tools/push_to_hpc.sh test      # solo test_slurm/
-./tools/push_to_hpc.sh old       # solo old_slurm/
+Each subdirectory contains `eval_results.csv` (one row per scene × scale)
+and `eval_aggregate.json` (mean / std per scale). The internal-mask
+alternative (LoRAShop adaptation, Appendix D of the paper) was not
+quantitatively evaluated; its qualitative output is committed at
+[`paper_figures/lorashop.png`](paper_figures/lorashop.png) and is
+produced by the pipeline under
+[`flux/tasks/shop_concept/`](flux/tasks/shop_concept/).
 
-# HPC → Mac: scarica sliders + outputs (incrementale)
-./tools/pull_from_hpc.sh                 # default: lascia anche su HPC
-REMOVE_REMOTE=1 ./tools/pull_from_hpc.sh # libera HPC dopo download
-```
+`metrics/select_best_runs.py` picks the top-k qualitative samples per concept
+for inclusion in the paper figures (committed under `paper_figures/`).
 
-Entrambi i comandi trasferiscono **solo file nuovi o modificati** (rsync). Vedi [`tools/README.md`](tools/README.md) per i dettagli.
+---
 
-## Convenzioni di import
+## HPC / SLURM templates
 
-Tutti gli import sono **assoluti** dalla repo root:
+Every task under `<arch>/tasks/<task>/jobs/new_slurm/` contains the SLURM
+templates that were used to produce the paper's results on a Slurm-managed
+GPU cluster. The templates are self-documenting CLI invocations of the
+Python entrypoints and can be run on any GPU host by replacing the `sbatch`
+call with `bash`.
 
-```python
-from sdxl.core.lora import LoRANetwork
-from flux.core.custom_flux_pipeline import FluxPipeline
-from sdxl.tasks.real_editing.lib.models.loader import load_model_context
-from flux.tasks.shop_concept.lib.flux_real_pipeline import RealGenerationPipeline
-```
+The optional helper scripts in `tools/` (`push_to_hpc.sh`, `pull_from_hpc.sh`)
+synchronize SLURM scripts and result artefacts between a local workstation and
+a remote HPC node via `rsync`; their configuration files
+(`tools/set_slurms.sh`, `tools/pull_config.sh`) are user-specific and
+git-ignored. A user instantiates them from the bundled `.example` templates.
+See `tools/README.md` for details. They are not required to run any experiment.
 
-Lanciare sempre `python` dalla root della repo (è quello che fanno i job SLURM dopo `cd $FERT_REPO`).
+---
 
-## Note operative
+## Acknowledgments
 
-- `.pt` e `.safetensors` sono **gitignored** (sliders trainati sono grandi, rigenerabili). Le sottocartelle `sliders/` hanno `.gitkeep` per essere tracciate vuote.
-- Le `outputs/*.png` di ogni task **sono tracciate** (sono evidenza sperimentale).
-- `**/logs/*` (stdout/stderr SLURM) ignorati con `.gitkeep` per la cartella.
-- `tools/set_slurms.sh` e `tools/pull_config.sh` sono **gitignored**: ognuno mantiene il suo localmente.
+This project builds on three publicly available prior works, whose code we
+used as a starting point and adapted to our setting.
+
+The whole repository starts from **Concept Sliders** (Gandikota et al., 2023,
+[code](https://github.com/rohitgandikota/sliders)). We reused their LoRA
+training framework and the prompt-based recipe that turns a LoRA adapter into
+a continuous attribute knob, and we did **not** modify the training stage.
+The `core/` modules under `sdxl/` and `flux/`, together with the training
+entrypoints under `<arch>/trained_sliders/training/scripts/`, are direct
+adaptations of theirs. The paper's contribution is at the inference stage,
+on top of the LoRA adapters they produce.
+
+The internal-mask alternative discussed in Appendix D of the paper,
+implemented in `flux/tasks/shop_concept/`, adapts the **LoRAShop**
+pipeline (Dalva et al., 2025,
+[code](https://github.com/gemlab-vt/LoRAShop)) for Flux.1-dev. We took
+their multi-LoRA, attention-derived mask machinery and extended it to
+accept Concept Slider checkpoints with continuous per-slider scales, and
+to compose multiple sliders additively inside the same region.
+
+The real-image verification mentioned in §1 of the paper, implemented in
+`sdxl/tasks/real_editing/`, uses **Tight Inversion** as inversion backend
+(Kadosh et al., 2025,
+[HuggingFace Space](https://huggingface.co/spaces/tight-inversion/tight-inversion)).
+We integrated their DDIM + gradient-descent + IP-Adapter inversion with the
+same masked-edit operator used elsewhere in the repository.
+
+We additionally rely on standard libraries (PyTorch, `diffusers`, PEFT) and
+on [Segment Anything](https://github.com/facebookresearch/segment-anything)
+(Kirillov et al., 2023) for the SAM mask extraction stage.
+
+Everything else in the repository — in particular the masked editing
+operator (§4) and its multi-mask / multi-LoRA extension, the
+region-aware LPIPS and CLIP metrics of §5.1 (equations (2) and (3) of
+the paper), the evaluation pipelines under `metrics/`, and the local
+utilities under `mask_SAM/` and `tools/` — is original to this work.
+
+---
+
+## License
+
+The original code in this repository is released under the **MIT License**.
+Files adapted from upstream projects retain their original licenses, which are
+compatible with MIT (MIT for Concept Sliders and LoRAShop, Apache-2.0 for
+diffusers and Segment Anything). The Tight-Inversion HF Space does not ship an
+explicit license file; we treat the adapted excerpts as research-only reference
+and credit the authors accordingly.

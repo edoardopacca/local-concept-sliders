@@ -1,35 +1,22 @@
 # vangogh_flux_v1.yaml
 #
-# Style slider: direzione realismo -> stile Van Gogh.
-# Primo style slider del progetto (finora solo attribute sliders: smile,
-# age, eyes).
+# Style slider: realism -> Van Gogh style.
 #
-# SCOPO: baseline "easy case" per lo spectrum diagnostico.
-#   Gli style sliders sono noti per funzionare bene su diffusion models
-#   perche' modificano GLOBALMENTE tutta l'immagine (textures, palette,
-#   brushstrokes) senza bisogno di binding entity-specifico. Questo e'
-#   fondamentalmente diverso dagli attribute sliders che richiedono
-#   localizzazione su un soggetto.
+# A global style slider: positive scales push the whole image toward
+# impasto / swirling brushstrokes / post-impressionist palette;
+# negative scales push it back toward a photographic look. The effect
+# is global because style modifies the image as a whole and does not
+# need any subject-specific binding.
 #
-# PREDIZIONE: vangogh_flux funziona nettamente meglio di smile/age/eyes
-#   in termini di applicazione pulita, perche' non c'e' nessun problema
-#   di binding da risolvere: lo stile si applica a tutta l'immagine in
-#   modo globale.
+# Prompts: 10 different scenes (landscape, portrait, still life, etc.)
+# with positive = "in style of Van Gogh, impasto, swirling brushstrokes"
+# and unconditional = "photograph, photorealistic, realistic". Target
+# and neutral are equal and carry no style descriptor (neutral anchor).
 #
-# CONFRONTO ATTESO per tesi:
-#   - style slider (van gogh):  baseline alto, funziona bene
-#   - subject slider simmetrico (smile v5): medio, serve direzione pulita
-#   - subject slider asimmetrico (smile v3/age v1): leakage problem
-#
-# PROMPT: 10 scene diverse (landscape, portrait, still life, ecc.) con
-#   positive="in style of Van Gogh, impasto, swirling brushstrokes" e
-#   unconditional="photograph, photorealistic, realistic". Target e
-#   neutral sono uguali, senza descrittore di stile (punto neutro).
-#
-# IPERPARAMETRI:
-#   - guidance_scale: 4 (match paper originale)
+# Hyperparameters:
+#   - guidance_scale: 4 (matches the upstream Concept Sliders paper)
 #   - resolution: 512
-#   - rank/alpha/method: rank 16, xattn, alpha 1 (adattamento Flux)
+#   - rank/alpha/method: rank 16, xattn, alpha 1 (Flux adaptation)
 # ============================================================
 
 - target: "a landscape"

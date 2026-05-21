@@ -1,24 +1,24 @@
 # big_eyes_flux_v1_symmetric.yaml
 #
-# Big-eyes slider su Flux nel SETTING GENERALE del paper Concept Sliders
-# (Gandikota et al. 2023):
-#   - 10 entries: 5 uomini x etnie + 5 donne x etnie
-#   - TUTTE enhance (nessun YAML trick di preservation)
-#   - Simmetrico per genere (big/small eyes deve applicarsi a chiunque)
+# Big-eyes slider on Flux in the general setting of the upstream Concept
+# Sliders paper (Gandikota et al., 2023):
+#   - 10 entries: 5 male ethnicities + 5 female ethnicities
+#   - all entries are enhance
+#   - symmetric across gender (big/small eyes applies to every subject)
 #
-# USO: slider "generico" di dimensione occhi. A scale positive gli occhi si
-#   allargano, a scale negative si restringono/socchiudono.
+# USE: a general eye-size slider. Positive scales widen the eyes,
+#   negative scales narrow them.
 #
-# PROMPT STRUCTURE (dal paper):
-#   target        = soggetto base
-#   positive      = soggetto + attributo (big eyes)
-#   unconditional = soggetto + counter-attributo (small eyes)
-#   neutral       = soggetto base (uguale a target)
+# Prompt structure (from the upstream paper):
+#   target        = base subject
+#   positive      = subject + attribute (big eyes)
+#   unconditional = subject + counter-attribute (small eyes)
+#   neutral       = base subject (equal to target)
 #
-# IPERPARAMETRI:
-#   - guidance_scale: 4 (valore del paper)
+# Hyperparameters:
+#   - guidance_scale: 4 (upstream value)
 #   - resolution: 512
-#   - rank 16, xattn, alpha 1 (convenzione nostra per Flux)
+#   - rank 16, xattn, alpha 1 (our convention on Flux)
 # ============================================================
 
 # === 5 enhance MALE entries ===

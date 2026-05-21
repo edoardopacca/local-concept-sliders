@@ -1,23 +1,20 @@
 # sky_day_night_flux_v1.yaml
 #
-# Global concept slider: direzione giorno <-> notte del cielo.
-# Differenza strutturale rispetto a smile_man:
-#   - NON c'e' sottoconcetto da preservare (la transizione giorno/notte
-#     si applica all'intera scena, non a un sottogruppo)
-#   - quindi NON usiamo lo YAML-trick / Eq.7 degenerata
-#   - tutte le entries sono enhance puri: positive = giorno, unconditional = notte
-#   - scale > 0 -> giorno, scale < 0 -> notte (direzione bidirezionale)
+# Global concept slider: day <-> night direction of the sky.
+#   - all entries are enhance: positive = day, unconditional = night
+#   - scale > 0 -> day, scale < 0 -> night (bidirectional)
 #
-# 10 entries: varianti di contesto (landscape/sky/city/beach/forest/
-# mountains/field/house/street/desert) per coprire diverse attivazioni
-# T5 del concetto "scena con cielo". Tutte portano la stessa direzione
-# day<->night, quindi il gradient si sovrappone coerentemente.
+# 10 entries cover varied contexts (landscape / sky / city / beach /
+# forest / mountains / field / house / street / desert) so that the
+# T5 activations for "scene with sky" are well sampled. Every entry
+# carries the same day<->night direction, so the gradients add up
+# coherently.
 #
-# Iperparametri identici a smile_man v3/v4 (proven-stable su Flux):
+# Hyperparameters (matching the stable Flux training recipe):
 #   - 500 max_train_steps
 #   - rank 16, xattn, alpha 1
 #   - lr 0.002, warmup 200
-#   - eta=2 per tutte (direzione enhance)
+#   - eta=2 across all entries (enhance direction)
 #   - save_every 100
 #
 # Costo computazionale: 3 forward LoRA-off unique per step (target ==

@@ -1,132 +1,138 @@
-# tools/
+# `tools/`
 
-Script e config personali per il workflow HPC ↔ Mac.
+Optional helper scripts that sync code and artefacts between a local
+workstation and an HPC node. Not required to run any experiment — the
+repository works fine if everything lives on the same machine. These
+utilities exist because the development split for this project was
+"edit on the laptop, train on the cluster", and rsync is faster than
+git for transferring large output artefacts.
 
-## File
+## Files
 
-| File | A cosa serve | Personale? |
+| File | Purpose | Tracked? |
 |---|---|---|
-| `set_slurms.sh.example` | Template config HPC (path repo, cache HF, funzioni activate env) | template tracked |
-| `set_slurms.sh` | Config personale HPC, source dagli SLURM | **gitignored** |
-| `pull_config.sh.example` | Template config Mac (HPC user/host/path) | template tracked |
-| `pull_config.sh` | Config personale Mac, source da `pull_from_hpc.sh` e `push_to_hpc.sh` | **gitignored** |
-| **`pull_from_hpc.sh`** | HPC → Mac: scarica sliders + outputs (incrementale) | tracked |
-| **`push_to_hpc.sh`** | Mac → HPC: pusha `.slurm` + configs YAML + prompts YAML (incrementale) | tracked |
+| `set_slurms.sh.example` | Per-user HPC config template (repo path, HF cache, env activation functions) | yes (template) |
+| `set_slurms.sh` | Active per-user HPC config; loaded by every SLURM template via `source` | **git-ignored** |
+| `pull_config.sh.example` | Per-user local config template (HPC user / host / paths) | yes (template) |
+| `pull_config.sh` | Active per-user local config; loaded by the sync scripts below | **git-ignored** |
+| `push_to_hpc.sh` | local -> HPC: pushes `.slurm` + `configs/*.yaml` + `prompts/*/*.yaml` (incremental) | yes |
+| `pull_from_hpc.sh` | HPC -> local: downloads trained sliders + image outputs (incremental) | yes |
 
 ## First-time setup
 
-**Su HPC** (per i job SLURM):
+On HPC (for the SLURM jobs):
+
 ```bash
-cd /home/<your-username>/FERT_PROJECT/local-concept-sliders
+cd /path/to/local-concept-sliders
 cp tools/set_slurms.sh.example tools/set_slurms.sh
 nano tools/set_slurms.sh
-# modifica:
-#   FERT_REPO            (path completo della repo HPC, es. /home/3226571/FERT_PROJECT/local-concept-sliders)
-#   FERT_HF_CACHE        (path completo cache HuggingFace)
-#   activate_flux_env()  (venv | conda | mamba: vedi esempi commentati nel template)
-#   activate_sdxl_env()  (idem)
+# Set: FERT_REPO, FERT_HF_CACHE, activate_flux_env(), activate_sdxl_env()
 ```
 
-**Sul Mac** (per gli script di sync):
+On the local machine (for the sync scripts):
+
 ```bash
-cd ~/Desktop/local-concept-sliders
+cd /path/to/local-concept-sliders
 cp tools/pull_config.sh.example tools/pull_config.sh
 nano tools/pull_config.sh
-# modifica:
-#   HPC_USER  (es. "3226571")
-#   HPC_HOST  (alias SSH "hpc" se hai ~/.ssh/config, altrimenti "slogin.hpc.unibocconi.it")
-#   HPC_REPO  (path completo HPC, es. "/home/3226571/FERT_PROJECT/local-concept-sliders")
-#   LOCAL_REPO (default: ~/Desktop/local-concept-sliders)
+# Set: HPC_USER, HPC_HOST, HPC_REPO, LOCAL_REPO
 ```
 
-## Setup SSH alias (consigliato sul Mac)
+The `set_slurms.sh.example` template ships with five environment-manager
+recipes (venv / conda / mamba / mixed / Lmod module load); pick one and
+adapt it to your cluster.
 
-Per evitare di scrivere `ssh user@hostname` ogni volta, in `~/.ssh/config` sul Mac:
+### SSH alias (recommended on the local machine)
+
+To avoid typing `ssh user@hostname` every time, add to `~/.ssh/config`:
 
 ```
 Host hpc
-    HostName slogin.hpc.unibocconi.it
+    HostName <your-hpc-hostname>
     User <your-username>
 ```
 
-Poi puoi usare `ssh hpc`, `scp file hpc:...`, e gli script qui dentro funzionano con `HPC_HOST="hpc"`.
+After that, `ssh hpc`, `scp file hpc:...` and the scripts in this
+directory all work with `HPC_HOST="hpc"`.
 
-Setup chiave SSH (una volta sola, per evitare password):
+Set up an SSH key once so you do not have to type the password every
+time:
+
 ```bash
-ssh-keygen -t ed25519                          # genera chiave (se non l'hai)
-ssh-copy-id <your-username>@slogin.hpc.unibocconi.it  # carica chiave su HPC
-ssh hpc                                        # test: deve entrare senza password
+ssh-keygen -t ed25519
+ssh-copy-id <your-username>@<your-hpc-hostname>
+ssh hpc                              # should log in without password
 ```
 
-## I 2 comandi del workflow
+## Usage
 
-### Mac → HPC: `push_to_hpc.sh`
+### local -> HPC (`push_to_hpc.sh`)
 
-Pusha dal Mac a HPC i file di configurazione del progetto:
-- **`.slurm`** in `**/jobs/{old,new,test}_slurm/`
-- **`configs/*.yaml`** in `<arch>/trained_sliders/training/configs/`
-- **`prompts/*/*.yaml`** in `<arch>/trained_sliders/training/prompts/{old,new,test}_prompt/`
-
-**Incrementale**: trasferisce solo file nuovi/modificati. Mantiene la struttura della repo.
+Pushes the project configuration files (SLURM templates + training
+YAMLs) from the local machine to HPC. **Incremental**: only new or
+modified files are transferred (size + mtime comparison via rsync).
 
 ```bash
-./tools/push_to_hpc.sh           # default: TUTTO (slurm + configs + prompts)
-./tools/push_to_hpc.sh slurm     # solo .slurm
-./tools/push_to_hpc.sh new       # solo new_slurm/
-./tools/push_to_hpc.sh test      # solo test_slurm/
-./tools/push_to_hpc.sh old       # solo old_slurm/
-./tools/push_to_hpc.sh configs   # solo configs/*.yaml
-./tools/push_to_hpc.sh prompts   # solo prompts/*/*.yaml
+./tools/push_to_hpc.sh           # default: everything (slurm + configs + prompts)
+./tools/push_to_hpc.sh slurm     # only .slurm (any jobs/new_slurm/)
+./tools/push_to_hpc.sh configs   # only configs/*.yaml
+./tools/push_to_hpc.sh prompts   # only prompts/*/*.yaml
 ./tools/push_to_hpc.sh yaml      # configs + prompts (no slurm)
 ```
 
-### HPC → Mac: `pull_from_hpc.sh`
+### HPC -> local (`pull_from_hpc.sh`)
 
-Scarica sliders trainati + immagini di output da HPC al Mac. **Incrementale**.
+Downloads trained slider weights and image outputs from HPC to the
+local machine. **Incremental**.
 
 ```bash
-./tools/pull_from_hpc.sh                 # default: scarica tutto, lascia su HPC
-DRY_RUN=1 ./tools/pull_from_hpc.sh       # anteprima (no operazioni)
-REMOVE_REMOTE=1 ./tools/pull_from_hpc.sh # scarica E libera HPC
+./tools/pull_from_hpc.sh                  # default: download, keep on HPC
+DRY_RUN=1 ./tools/pull_from_hpc.sh        # preview only (no transfers)
+REMOVE_REMOTE=1 ./tools/pull_from_hpc.sh  # download AND free HPC
 ```
 
-## Cosa significa "incrementale"
+## What "incremental" means
 
-Sotto il cofano è `rsync` che confronta size + mtime. I file identici vengono **skippati silenziosamente**, vengono trasferiti solo quelli nuovi o modificati. Output:
+Under the hood both scripts use `rsync` to compare size + mtime.
+Identical files are skipped silently; only new or modified ones are
+transferred. The output convention is rsync's standard:
 
-- `>f+++++++++ x.slurm` → file nuovo (creato su HPC)
-- `>f.st...... x.slurm` → file modificato (size/timestamp diversi)
-- (riga assente) → file identico, skip
+- `>f+++++++++ x.slurm` -> new file (created on HPC)
+- `>f.st...... x.slurm` -> modified file (different size or timestamp)
+- (no line) -> identical, skipped
 
-## Workflow tipico
+## Typical workflow
 
 ```bash
-# 1. Modifichi/crei nuovi .slurm sul Mac
-# 2. Pushali su HPC
+# 1. Edit / create new .slurm or training YAMLs on the local machine.
+# 2. Push them to HPC.
 ./tools/push_to_hpc.sh new
 
-# 3. Lanci i job (sul HPC)
+# 3. Submit the job (on HPC).
 ssh hpc
-cd /home/<your-username>/FERT_PROJECT/local-concept-sliders
+cd /path/to/local-concept-sliders
 sbatch flux/tasks/<task>/jobs/new_slurm/myjob.slurm
 exit
 
-# 4. Quando i job finiscono, scarichi tutto sul Mac
+# 4. When the jobs finish, download everything back.
 ./tools/pull_from_hpc.sh
 ```
 
-## Struttura path Mac ↔ HPC
+## Local <-> HPC path structure
 
-I path **dentro la repo** sono identici. Cambia solo il **prefisso assoluto**:
+Inside the repository the relative paths are identical on both sides —
+only the absolute prefix differs:
 
 ```
-Mac:  ~/Desktop/local-concept-sliders/                    flux/tasks/baseline/outputs/myrun/img.png
-HPC:  /home/<your-username>/FERT_PROJECT/local-concept-sliders/   flux/tasks/baseline/outputs/myrun/img.png
-                          ↑ unica differenza (LOCAL_REPO vs HPC_REPO)
+local:  ~/Desktop/local-concept-sliders/                  flux/tasks/baseline/outputs/myrun/img.png
+HPC:    /home/<user>/path/to/local-concept-sliders/       flux/tasks/baseline/outputs/myrun/img.png
+                       ^ only difference (LOCAL_REPO vs HPC_REPO)
 ```
 
-I prefissi sono settati nei tuoi config personali:
-- `LOCAL_REPO` in `tools/pull_config.sh` (Mac)
+The two prefixes are configured in the per-user files:
+
+- `LOCAL_REPO` in `tools/pull_config.sh` (local)
 - `FERT_REPO`  in `tools/set_slurms.sh` (HPC)
 
-Gli script costruiscono dinamicamente i path completi a partire da queste variabili.
+The scripts build the full absolute paths dynamically from those
+variables.

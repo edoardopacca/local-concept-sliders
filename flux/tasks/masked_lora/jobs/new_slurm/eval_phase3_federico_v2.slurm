@@ -12,10 +12,10 @@
 # =============================================================================
 # eval_phase3_federico_v2.slurm
 # =============================================================================
-# Phase 3 masked LoRA — 5 concept × 20 run con i pesi di Federico (v2_custom).
-# Night_sky escluso (nessuna maschera disponibile).
+# Phase 3 masked LoRA — 5 concept × 20 run with the v2_custom slider weights.
+# Night_sky excluded (no mask available).
 #
-# CyberDuck: Sliders-flux/ → $FERT_REPO/flux/trained_sliders/sliders/federico_v2/
+# Custom slider weights expected under flux/trained_sliders/sliders/federico_v2/
 # =============================================================================
 
 set -euo pipefail
@@ -82,8 +82,8 @@ run_concept "smile_person" "${S_ROOT}/flux-smile_flux_v2_custom/slider_0.pt"    
 run_concept "daynight"     "${S_ROOT}/flux-night_sky_flux_v2_custom/slider_0.pt"      "daynight"   "3 4 5"
 
 echo "================================================================"
-echo "=== PHASE 3 federico_v2 COMPLETATA                         ==="
-echo "Per le metriche:"
+echo "=== PHASE 3 federico_v2 COMPLETED                         ==="
+echo "For metrics:"
 for C in age_person curlyhair furlength painterly smile_person daynight; do
     echo "  python metrics/eval_masked.py --concept $C --runs_root ${RUNS_ROOT}"
 done

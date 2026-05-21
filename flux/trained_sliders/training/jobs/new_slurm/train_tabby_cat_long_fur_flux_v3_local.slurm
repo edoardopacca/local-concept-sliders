@@ -10,6 +10,18 @@
 #SBATCH --output=flux/trained_sliders/training/logs/%x_%j.out
 #SBATCH --error=flux/trained_sliders/training/logs/%x_%j.err
 
+# =============================================================================
+# train_tabby_cat_long_fur_flux_v3_local.slurm  —  OBSOLETE (cannot run)
+# =============================================================================
+# This SLURM template trained a subject-specific fur-length slider on
+# Flux.1-dev. The corresponding prompt YAML has been removed from the
+# repository, so the job is no longer runnable. It is retained only
+# because deleting it would require also editing surrounding code paths.
+# The current paper proposes a single method — external mask-guided
+# localization of a LoRA adapter at inference time (§4) — and does not
+# include a subject-specific training variant.
+# =============================================================================
+
 set -euo pipefail
 
 source "$SLURM_SUBMIT_DIR/tools/set_slurms.sh"
@@ -46,5 +58,5 @@ python -u flux/trained_sliders/training/scripts/train_flux_slider.py \
     --save_every 200
 
 echo ""
-echo "=== TRAINING COMPLETATO ==="
+echo "=== TRAINING COMPLETED ==="
 find "$OUT_DIR" -maxdepth 2 -type f | sort

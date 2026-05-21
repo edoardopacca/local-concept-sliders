@@ -45,5 +45,5 @@ python -u flux/trained_sliders/training/scripts/train_flux_slider.py \
     --save_every 100
 
 echo ""
-echo "=== TRAINING COMPLETATO ==="
+echo "=== TRAINING COMPLETED ==="
 ls -la "$OUT_DIR"

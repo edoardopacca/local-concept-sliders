@@ -12,12 +12,13 @@
 # =============================================================================
 # train_age_flux_v1_symmetric.slurm
 # =============================================================================
-# Training concept slider AGE su Flux.1-dev, setting simmetrico:
+# Train a general AGE concept slider on Flux.1-dev:
 #   - 10 entries (5 male + 5 female)
-#   - TUTTE enhance (nessun YAML trick di preservation)
-#   - L'effetto età si applica a qualunque soggetto
+#   - all entries are enhance
+#   - the age effect applies to every subject covered by the prompts
 #
-# Hyperparameters identici a smile_flux_v5_symmetric per apples-to-apples.
+# Hyperparameters identical to smile_flux_v5_symmetric for an
+# apples-to-apples comparison.
 # Output: flux/trained_sliders/sliders/age_flux_v1_symmetric_rank16_xattn_alpha1/
 # =============================================================================
 
@@ -52,5 +53,5 @@ python -u flux/trained_sliders/training/scripts/train_flux_slider.py \
     --save_every 100
 
 echo ""
-echo "=== TRAINING COMPLETATO ==="
+echo "=== TRAINING COMPLETED ==="
 ls -la "$OUT_DIR"

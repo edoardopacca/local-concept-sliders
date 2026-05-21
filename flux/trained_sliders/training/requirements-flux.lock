@@ -1,13 +1,12 @@
 # ============================================================================
 # requirements-flux.lock
 # ============================================================================
-# Snapshot del venv flux-sliders al 2026-04-19T03:51:25+02:00
+# Snapshot of the flux-sliders venv taken on 2026-04-19T03:51:25+02:00.
 #
 # Python: 3.9.21
-# Venv:   /home/3226571/Linux4HPC/venvs/flux-sliders
-# CUDA:   torch 2.4.1+cu124 (cuda disponibile: False)
+# CUDA:   torch 2.4.1+cu124
 #
-# Per ricreare:
+# To recreate:
 #   source $NEW_VENV/bin/activate
 #   pip install -r requirements-flux.lock
 # ============================================================================

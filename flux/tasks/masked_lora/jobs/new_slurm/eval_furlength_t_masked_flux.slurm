@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=eval_furlength_t_masked_flux
-#SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
 #SBATCH --gpus=1
@@ -29,7 +28,7 @@ echo "=== Masked LoRA eval — furlength_t (Flux) — scale 1, 2, 3 ==="
 nvidia-smi
 echo ""
 
-# rimuovi output precedenti
+# Remove previous outputs
 rm -rf metrics/results_flux_masked/furlength metrics/results_flux_masked/furlength_t
 
 python metrics/eval_masked.py \
@@ -40,7 +39,7 @@ python metrics/eval_masked.py \
     --output_dir  "metrics/results_flux_masked" \
     --device      cuda
 
-# rinomina subdir per coerenza (in caso più avanti si aggiunga furlength_f)
+# Rename the subdir for consistency (in case a furlength_f variant is added later).
 mv metrics/results_flux_masked/furlength metrics/results_flux_masked/furlength_t
 
 echo ""

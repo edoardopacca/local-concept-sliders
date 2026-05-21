@@ -76,7 +76,7 @@ class InversionBackend(ABC):
         """Run inversion and return standardised artifacts."""
 
     def provenance(self) -> Dict[str, str]:
-        """Return provenance metadata for EXTERNAL_SOURCES.md tracking."""
+        """Return provenance metadata for documentation tracking."""
         return {
             "name": self.name,
             "status": self.status,

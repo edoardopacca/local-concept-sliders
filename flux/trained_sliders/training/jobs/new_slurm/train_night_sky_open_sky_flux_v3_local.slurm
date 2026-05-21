@@ -46,5 +46,5 @@ python -u flux/trained_sliders/training/scripts/train_flux_slider.py \
     --save_every 500
 
 echo ""
-echo "=== TRAINING COMPLETATO ==="
+echo "=== TRAINING COMPLETED ==="
 find "$OUT_DIR" -maxdepth 2 -type f | sort

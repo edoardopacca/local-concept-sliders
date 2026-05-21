@@ -12,7 +12,7 @@
 # =============================================================================
 # run_multi_masked_phase3.slurm
 # =============================================================================
-# FASE 3 — Applica masked LoRA per tutti e 6 gli esperimenti.
+# Phase 3 — apply masked LoRA across all 6 experiments.
 #
 # Prerequisiti per ogni run dir:
 #   base.png + init_latents.pt  (da fase 1)
@@ -97,7 +97,7 @@ run_edit "masked_painterly_01" \
     "painterly"
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA                                         ==="
+echo "=== FASE 3 COMPLETED                                         ==="
 echo "================================================================"
 for RUN in masked_age_person_01 masked_curlyhair_01 masked_daynight_01 \
            masked_furlength_01 masked_smile_person_01 masked_painterly_01; do

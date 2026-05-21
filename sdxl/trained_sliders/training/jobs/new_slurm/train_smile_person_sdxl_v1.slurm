@@ -12,7 +12,7 @@
 # =============================================================================
 # train_smile_person_sdxl_v1.slurm
 # =============================================================================
-# Smile slider for ALL persons (baseline, gender-agnostic).
+# Smile slider — general, trained on prompts covering both genders.
 #
 # Setup:
 #   - 10 entries: 5 ethnicities x 2 genders (from repo original smile GPT prompts)
@@ -21,7 +21,7 @@
 #   - start_noise 750 (as in original repo generate_images_xl.py default)
 #
 # Test: scale -2 0 2, seed 42
-#   - man / woman / couple prompts → slider must affect both genders
+#   - man / woman / couple prompts → slider affects both genders
 #
 # Output slider:
 #   sdxl/trained_sliders/sliders/smile_person_sdxl_v1_alpha1.0_rank4_noxattn/
@@ -40,7 +40,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 echo "================================================================"
-echo "=== FASE 1: TRAINING smile_person_sdxl_v1                    ==="
+echo "=== PHASE 1: TRAINING smile_person_sdxl_v1                    ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -53,14 +53,14 @@ python sdxl/trained_sliders/training/scripts/train.py \
     --device 0
 
 echo ""
-echo "=== Training completato ==="
+echo "=== Training completed ==="
 SLIDER_DIR="sdxl/trained_sliders/sliders/smile_person_sdxl_v1_alpha1.0_rank4_noxattn"
 SLIDER="${SLIDER_DIR}/smile_person_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors"
 ls -lh "$SLIDER_DIR"
 
 echo ""
 echo "================================================================"
-echo "=== FASE 2: TEST POST-TRAINING                                ==="
+echo "=== PHASE 2: POST-TRAINING TEST                                ==="
 echo "================================================================"
 
 TEST_ROOT="sdxl/tasks/baseline/outputs/smile_person_sdxl_v1_test"
@@ -90,7 +90,7 @@ run_test "a close-up portrait, sharp focus, neutral background"                "
 
 echo ""
 echo "================================================================"
-echo "=== JOB COMPLETATO                                            ==="
+echo "=== JOB COMPLETED                                            ==="
 echo "=== Output slider: ${SLIDER_DIR}                              ==="
 echo "=== Output test:   ${TEST_ROOT}                               ==="
 echo "================================================================"

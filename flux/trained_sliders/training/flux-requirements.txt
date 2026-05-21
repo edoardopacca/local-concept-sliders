@@ -24,8 +24,6 @@ tqdm
 wandb
 datasets
 ftfy
-openai
 scikit-learn
 git+https://github.com/davidbau/baukit
-anthropic
 peft

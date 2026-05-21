@@ -17,10 +17,10 @@
 #   - metadata.json (da phase 1)
 #   - mask.png      (da phase 2 SAM sul Mac)
 #
-# IMPORTANTE: modifica RUN_ID sotto con il valore che ha generato phase 1
+# IMPORTANT: update RUN_ID below with the value used by phase 1
 # (è nella forma "two_subjects_masked_YYYYMMDD_HHMM").
 #
-# Output: edited_scale{S}.png per ogni scale, applicato SOLO dentro maschera.
+# Output: edited_scale{S}.png per scale, applied ONLY inside the mask.
 # =============================================================================
 
 set -euo pipefail

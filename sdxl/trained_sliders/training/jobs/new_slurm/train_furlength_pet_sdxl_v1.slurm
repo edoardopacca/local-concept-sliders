@@ -12,7 +12,7 @@
 # =============================================================================
 # train_furlength_pet_sdxl_v1.slurm
 # =============================================================================
-# Fur length slider for dogs and cats (general, no subject localization).
+# Fur length slider — general, trained on a mix of dog and cat prompts.
 #
 # Setup:
 #   - 10 entries: 5 dog types + 5 cat types
@@ -41,7 +41,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 echo "================================================================"
-echo "=== FASE 1: TRAINING furlength_pet_sdxl_v1                   ==="
+echo "=== PHASE 1: TRAINING furlength_pet_sdxl_v1                   ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -54,14 +54,14 @@ python sdxl/trained_sliders/training/scripts/train.py \
     --device 0
 
 echo ""
-echo "=== Training completato ==="
+echo "=== Training completed ==="
 SLIDER_DIR="sdxl/trained_sliders/sliders/furlength_pet_sdxl_v1_alpha1.0_rank4_noxattn"
 SLIDER="${SLIDER_DIR}/furlength_pet_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors"
 ls -lh "$SLIDER_DIR"
 
 echo ""
 echo "================================================================"
-echo "=== FASE 2: TEST POST-TRAINING                                ==="
+echo "=== PHASE 2: POST-TRAINING TEST                                ==="
 echo "================================================================"
 
 TEST_ROOT="sdxl/tasks/baseline/outputs/furlength_pet_sdxl_v1_test"
@@ -91,7 +91,7 @@ run_test "a photorealistic portrait of a dog and a cat, sharp focus"            
 
 echo ""
 echo "================================================================"
-echo "=== JOB COMPLETATO                                            ==="
+echo "=== JOB COMPLETED                                            ==="
 echo "=== Output slider: ${SLIDER_DIR}                              ==="
 echo "=== Output test:   ${TEST_ROOT}                               ==="
 echo "================================================================"

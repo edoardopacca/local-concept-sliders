@@ -10,27 +10,15 @@
 #SBATCH --error=sdxl/trained_sliders/training/logs/%x_%j.err
 
 # =============================================================================
-# train_smile_woman_sdxl_v1.slurm
+# train_smile_woman_sdxl_v1.slurm  —  OBSOLETE (cannot run)
 # =============================================================================
-# Smile slider for WOMEN ONLY (our spatial concept slider method).
-#
-# Strategy:
-#   - Female entries (10): positive=smiling, unconditional=frowning → direction learned
-#   - Male entries (5):    positive=unconditional=neutral → (pos-neg)=0 → no change
-#   The LoRA gradient for males averages toward zero; for females it learns smile.
-#
-# Setup:
-#   - 15 entries: 10 female + 5 male neutral
-#   - rank 4, alpha 1.0, noxattn
-#   - guidance_scale 4, resolution 1024, 1000 iterations
-#   - start_noise 750 (as in original repo generate_images_xl.py default)
-#
-# Test: scale -2 0 2, seed 42
-#   - man / woman / couple prompts → slider must affect ONLY women
-#
-# Output slider:
-#   sdxl/trained_sliders/sliders/smile_woman_sdxl_v1_alpha1.0_rank4_noxattn/
-#     smile_woman_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors
+# This SLURM template trained a subject-specific smile slider. The
+# corresponding training config and prompt YAML have been removed from
+# the repository, so the job is no longer runnable. It is retained only
+# because deleting it would require also editing surrounding code paths.
+# The current paper proposes a single method — external mask-guided
+# localization of a LoRA adapter at inference time (§4) — and does not
+# include a subject-specific training variant.
 # =============================================================================
 
 set -euo pipefail
@@ -45,7 +33,7 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 echo "================================================================"
-echo "=== FASE 1: TRAINING smile_woman_sdxl_v1                     ==="
+echo "=== PHASE 1: TRAINING smile_woman_sdxl_v1                     ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -58,14 +46,14 @@ python sdxl/trained_sliders/training/scripts/train.py \
     --device 0
 
 echo ""
-echo "=== Training completato ==="
+echo "=== Training completed ==="
 SLIDER_DIR="sdxl/trained_sliders/sliders/smile_woman_sdxl_v1_alpha1.0_rank4_noxattn"
 SLIDER="${SLIDER_DIR}/smile_woman_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors"
 ls -lh "$SLIDER_DIR"
 
 echo ""
 echo "================================================================"
-echo "=== FASE 2: TEST POST-TRAINING                                ==="
+echo "=== PHASE 2: POST-TRAINING TEST                                ==="
 echo "================================================================"
 
 TEST_ROOT="sdxl/tasks/baseline/outputs/smile_woman_sdxl_v1_test"
@@ -95,7 +83,7 @@ run_test "a close-up portrait, sharp focus, neutral background"                "
 
 echo ""
 echo "================================================================"
-echo "=== JOB COMPLETATO                                            ==="
+echo "=== JOB COMPLETED                                            ==="
 echo "=== Output slider: ${SLIDER_DIR}                              ==="
 echo "=== Output test:   ${TEST_ROOT}                               ==="
 echo "================================================================"

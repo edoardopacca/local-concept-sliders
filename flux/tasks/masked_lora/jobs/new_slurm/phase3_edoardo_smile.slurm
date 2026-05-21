@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=p3_edo_smile
-#SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
 #SBATCH --nodes=1
@@ -12,7 +11,7 @@
 #SBATCH --output=flux/tasks/masked_lora/logs/%x_%j.out
 #SBATCH --error=flux/tasks/masked_lora/logs/%x_%j.err
 
-# Phase 3 masked LoRA — smile × 20 run — Edoardo
+# Phase 3 masked LoRA — smile × 20 run 
 # smile_t (trial_v1)  : s1, s1.5, s2
 # smile_f (federico_v2): s1, s2, s3
 
@@ -36,7 +35,7 @@ F_ROOT="$FERT_REPO/flux/trained_sliders/sliders/federico_v2"
 mkdir -p flux/tasks/masked_lora/logs "$CACHE_DIR"
 
 echo "================================================================"
-echo "=== PHASE 3 — smile × 20 run — Edoardo                    ==="
+echo "=== PHASE 3 — smile × 20 run                    ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -83,7 +82,7 @@ run_concept "smile_person" \
     "smile_f" "1 2 3"
 
 echo "================================================================"
-echo "=== PHASE 3 smile COMPLETATA                               ==="
+echo "=== PHASE 3 smile COMPLETED                               ==="
 echo "  smile_t (trial_v1)   : s1, s1.5, s2"
 echo "  smile_f (federico_v2): s1, s2, s3"
 echo "================================================================"

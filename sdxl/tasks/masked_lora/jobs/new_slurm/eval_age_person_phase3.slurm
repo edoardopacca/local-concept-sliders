@@ -16,13 +16,13 @@
 #
 # Prerequisiti per ogni run dir:
 #   base.png + init_latents.pt   (fase 1: eval_age_person_phase1.slurm)
-#   mask.png + mask_meta.json    (fase 2: SAM interattivo, vedi istruzioni sotto)
+#   mask.png + mask_meta.json    (phase 2: interactive SAM, see instructions below)
 #
 # Slider: age_person_sdxl_v1_alpha1.0_rank4_noxattn  (generale)
 # Scale testate: 1.5  2.0  3.0
-# --skip_metrics: metriche calcolate separatamente con metrics/eval_masked.py
+# --skip_metrics: metrics are computed separately by metrics/eval_masked.py
 #
-# FASE 2 — Come creare le maschere (eseguire in locale):
+# Phase 2 — produce the masks locally:
 #   Per ogni run dir eval_age_person_{NN}:
 #     python mask_SAM/segment_with_sam.py \
 #       --image_path sdxl/tasks/masked_lora/runs/eval_age_person_NN/base.png \
@@ -87,7 +87,7 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_age_person                      ==="
+echo "=== FASE 3 COMPLETED: eval_age_person                      ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept age_person --device cuda"

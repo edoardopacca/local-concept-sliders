@@ -1,47 +1,46 @@
 #!/bin/bash
 # =============================================================================
-# pull_config.sh — Configurazione personale per gli script HPC↔Mac
+# Per-user configuration for the local <-> HPC sync scripts.
 # =============================================================================
-# QUESTO È UN TEMPLATE. Copia in `tools/pull_config.sh` (gitignored) e
-# modifica secondo il tuo setup personale:
+# This is a TEMPLATE. Copy it to `tools/pull_config.sh` (gitignored) and
+# edit it for your local setup:
 #
 #   cp tools/pull_config.sh.example tools/pull_config.sh
 #   nano tools/pull_config.sh
 #
-# Usato da: pull_from_hpc.sh, push_to_hpc.sh
+# Used by: pull_from_hpc.sh, push_to_hpc.sh
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Username SSH su HPC
+# SSH username on HPC
 # -----------------------------------------------------------------------------
-# Il numero matricola o nome utente con cui ti logghi su HPC.
 HPC_USER="<your-username>"
 
 # -----------------------------------------------------------------------------
-# Hostname o alias SSH dell'HPC
+# SSH hostname (or alias) for HPC
 # -----------------------------------------------------------------------------
-# OPZIONE A — Alias SSH (consigliato, più pulito).
-#   Aggiungi in ~/.ssh/config sul Mac:
+# Option A — SSH alias (recommended, cleaner).
+#   Add to ~/.ssh/config on the local machine:
 #     Host hpc
-#         HostName slogin.hpc.unibocconi.it
-#         User <tuo-username>
-#   Poi qui basta:
+#         HostName <your-hpc-hostname>
+#         User <your-username>
+#   Then this is enough:
 HPC_HOST="hpc"
 
-# OPZIONE B — Hostname completo diretto (no alias SSH).
-#   HPC_HOST="slogin.hpc.unibocconi.it"
+# Option B — Full hostname (no alias).
+#   HPC_HOST="<your-hpc-hostname>"
 
 # -----------------------------------------------------------------------------
-# Path della repo SU HPC (PATH COMPLETO, non `~`)
+# Repository path on HPC (absolute, not `~`)
 # -----------------------------------------------------------------------------
-# Esempi:
-#   /home/3226571/FERT_PROJECT/local-concept-sliders        ← Federico
-#   /home/9999999/lavoro/local-concept-sliders               ← compagno A
-#   /scratch/9999999/local-concept-sliders                   ← se usi /scratch
-HPC_REPO="/home/<your-username>/FERT_PROJECT/local-concept-sliders"
+# Examples:
+#   /home/<user>/projects/local-concept-sliders
+#   /scratch/<user>/local-concept-sliders
+HPC_REPO="/home/<your-username>/path/to/local-concept-sliders"
 
 # -----------------------------------------------------------------------------
-# Path della repo SUL MAC
+# Repository path on the local machine
 # -----------------------------------------------------------------------------
-# Default: ~/Desktop/local-concept-sliders. Cambia se l'hai messa altrove.
+# Default: ~/Desktop/local-concept-sliders. Change it if the clone lives
+# somewhere else.
 LOCAL_REPO="$HOME/Desktop/local-concept-sliders"

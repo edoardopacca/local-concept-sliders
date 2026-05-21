@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """
-SDXL masked_lora phase 3 — multi-mask multi-LoRA edit.
+SDXL phase 3 of the external mask-guided pipeline: multi-mask + multi-LoRA
+masked edit.
 
-Supporta due modalità via CLI:
+Two CLI modes:
 
-(1) Legacy single-mask single-slider (retro-compatibile col codice precedente):
+(1) Legacy single-mask single-slider:
       --slider_path X.pt --mask_name M.png --slider_scale S
 
-(2) Multi-mask + multi-LoRA per mask (analogo al refactor Flux cb46c53):
+(2) Multi-mask + multi-LoRA per mask:
       --slider_paths X1.pt X2.pt X3.pt
       --mask_names M1.png M2.png
       --slider_to_mask 0 0 1
       --slider_scales 1.0 2.0 0.5
 
-In modalità (2): N mask disgiunte, M slider per mask (sommati additivamente
-via N istanze di LoRANetwork annidate). Per step di denoising:
-  1 forward base (tutti i LoRA off)
-  N forward styled (1 per mask, con solo i suoi slider attivi)
-  blend: out = (1 - sum mask_i) * base + sum (mask_i * styled_i)
+In mode (2): N disjoint masks, M sliders per mask (summed additively via
+N nested LoRANetwork instances). For each denoising step:
+  1 base forward      (every LoRA off)
+  N styled forwards   (one per mask, with only its sliders active)
+  blend: out = (1 - sum_i mask_i) * base + sum_i (mask_i * styled_i)
 
-In modalità (1): comportamento storico invariato (1 base + 1 styled + blend).
+In mode (1): one base + one styled + blend (operator of eq. (2) in the paper).
 """
 import argparse
 import json
@@ -54,31 +55,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--run_dir", type=Path, required=True)
 
-    # Legacy single-mask single-slider (retro-compat)
+    # Legacy single-mask single-slider
     parser.add_argument("--slider_path", type=str, default=None,
-                        help="Legacy: 1 solo slider. Mutually exclusive con --slider_paths.")
+                        help="Legacy: a single slider. Mutually exclusive with --slider_paths.")
     parser.add_argument("--slider_scale", type=float, default=2.0,
-                        help="Legacy: scala per il singolo slider.")
+                        help="Legacy: scale for the single slider.")
     parser.add_argument("--mask_name", type=str, default=None,
-                        help="Legacy: 1 sola mask (default mask.png). "
-                             "Mutually exclusive con --mask_names.")
+                        help="Legacy: a single mask (default mask.png). "
+                             "Mutually exclusive with --mask_names.")
 
     # Multi-mask multi-LoRA
     parser.add_argument("--slider_paths", type=str, nargs="+", default=None,
-                        help="Multi-mode: lista di slider (.pt o .safetensors).")
+                        help="Multi-mode: list of sliders (.pt or .safetensors).")
     parser.add_argument("--mask_names", type=str, nargs="+", default=None,
-                        help="Multi-mode: lista di N maschere (PNG binari nella run_dir).")
+                        help="Multi-mode: list of N masks (binary PNGs in the run dir).")
     parser.add_argument("--slider_to_mask", type=int, nargs="+", default=None,
-                        help="Multi-mode: slider_to_mask[i]=j -> slider i si applica nella "
-                             "regione di mask j. Lunghezza == --slider_paths. Piu' slider "
-                             "su stessa mask = composizione additiva (paper-style).")
+                        help="Multi-mode: slider_to_mask[i]=j means slider i is applied "
+                             "inside mask j. Length must match --slider_paths. Several "
+                             "sliders on the same mask compose additively.")
     parser.add_argument("--slider_scales", type=float, nargs="+", default=None,
-                        help="Multi-mode: 1 scale per slider (1:1 con --slider_paths).")
+                        help="Multi-mode: one scale per slider (1:1 with --slider_paths).")
 
     parser.add_argument("--rank", type=int, default=4)
     parser.add_argument("--start_noise", type=int, default=700,
-                        help="Soglia di timestep: per t > start_noise saltiamo il forward "
-                             "styled (LoRA inattivo, output = base). Default 700.")
+                        help="Timestep threshold: for t > start_noise the styled forward "
+                             "is skipped (LoRA inactive, output = base). Default 700.")
     parser.add_argument("--model_id", type=str, default=None)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--dtype", type=str, choices=["float16", "bfloat16", "float32"], default="float16")
@@ -88,14 +89,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _normalize_args(args) -> Tuple[List[str], List[str], List[int], List[float], bool]:
-    """Normalizza CLI legacy o multi in una forma unica multi.
+    """Normalise legacy and multi CLI into the same multi-mode form.
 
-    Ritorna:
+    Returns:
       slider_paths   : List[str]
       mask_names     : List[str]
       slider_to_mask : List[int]   (mapping slider_idx -> mask_idx)
       slider_scales  : List[float]
-      is_multi       : bool        (True se modalita' multi-mode)
+      is_multi       : bool        (True if running in multi-mode)
     """
     has_slider_paths = args.slider_paths is not None
     has_slider_path = args.slider_path is not None
@@ -110,41 +111,41 @@ def _normalize_args(args) -> Tuple[List[str], List[str], List[int], List[float],
         if has_slider_path or has_mask_name:
             raise ValueError(
                 "Mixing legacy (--slider_path/--mask_name) and multi "
-                "(--slider_paths/--mask_names/--slider_to_mask/--slider_scales) e' ambiguo. "
-                "Usa SOLO una delle due forme."
+                "(--slider_paths/--mask_names/--slider_to_mask/--slider_scales) is "
+                "ambiguous. Use ONE form or the other."
             )
         if not has_slider_paths:
-            raise ValueError("Multi-mode richiede --slider_paths.")
+            raise ValueError("Multi-mode requires --slider_paths.")
         if not has_mask_names:
-            raise ValueError("Multi-mode richiede --mask_names.")
+            raise ValueError("Multi-mode requires --mask_names.")
         if not has_slider_to_mask:
-            raise ValueError("Multi-mode richiede --slider_to_mask (mapping slider->mask).")
+            raise ValueError("Multi-mode requires --slider_to_mask (slider->mask mapping).")
         if not has_slider_scales:
-            raise ValueError("Multi-mode richiede --slider_scales (1 valore per slider).")
+            raise ValueError("Multi-mode requires --slider_scales (one value per slider).")
         n_sliders = len(args.slider_paths)
         n_masks = len(args.mask_names)
         if len(args.slider_to_mask) != n_sliders:
             raise ValueError(
-                f"--slider_to_mask ha {len(args.slider_to_mask)} valori, attesi "
-                f"{n_sliders} (uno per --slider_paths)."
+                f"--slider_to_mask has {len(args.slider_to_mask)} values, expected "
+                f"{n_sliders} (one per --slider_paths)."
             )
         if len(args.slider_scales) != n_sliders:
             raise ValueError(
-                f"--slider_scales ha {len(args.slider_scales)} valori, attesi "
-                f"{n_sliders} (uno per --slider_paths)."
+                f"--slider_scales has {len(args.slider_scales)} values, expected "
+                f"{n_sliders} (one per --slider_paths)."
             )
         for s_idx, m_idx in enumerate(args.slider_to_mask):
             if not (0 <= m_idx < n_masks):
                 raise ValueError(
-                    f"--slider_to_mask[{s_idx}]={m_idx} fuori range "
-                    f"[0, {n_masks}). Hai {n_masks} maschere."
+                    f"--slider_to_mask[{s_idx}]={m_idx} is out of range "
+                    f"[0, {n_masks}); there are {n_masks} masks."
                 )
         masks_used = set(args.slider_to_mask)
         for m in range(n_masks):
             if m not in masks_used:
                 raise ValueError(
-                    f"Maschera {m} ('{args.mask_names[m]}') non ha slider associati. "
-                    f"Aggiungi almeno uno slider che mappi a questa mask."
+                    f"Mask {m} ('{args.mask_names[m]}') has no slider mapped to it. "
+                    f"Add at least one slider that maps to this mask."
                 )
         return (list(args.slider_paths), list(args.mask_names),
                 list(args.slider_to_mask), list(args.slider_scales), True)
@@ -152,7 +153,7 @@ def _normalize_args(args) -> Tuple[List[str], List[str], List[int], List[float],
     # ---- Legacy mode ----
     if not has_slider_path:
         raise ValueError(
-            "Serve --slider_path (legacy) oppure --slider_paths (multi)."
+            "Need --slider_path (legacy) or --slider_paths (multi)."
         )
     mask_name = args.mask_name if has_mask_name else "mask.png"
     return ([args.slider_path], [mask_name], [0], [args.slider_scale], False)
@@ -176,10 +177,10 @@ def set_determinism(seed: int) -> None:
 
 
 def load_run_inputs(run_dir: Path, mask_names: List[str]) -> Tuple[Dict, torch.Tensor, List[torch.Tensor]]:
-    """Carica metadata.json, init_latents (se presente), e LISTA di maschere.
+    """Load metadata.json, init_latents (if present) and a LIST of masks.
 
-    Ritorna (metadata, init_latents_or_None, [mask_tensor_1, mask_tensor_2, ...])
-    dove ogni mask_tensor ha shape (1, 1, H, W) in [0, 1].
+    Returns ``(metadata, init_latents_or_None, [mask_tensor_1, ...])`` where
+    each mask_tensor has shape ``(1, 1, H, W)`` with values in ``[0, 1]``.
     """
     metadata_path = run_dir / "metadata.json"
     init_latents_path = run_dir / "init_latents.pt"
@@ -188,7 +189,7 @@ def load_run_inputs(run_dir: Path, mask_names: List[str]) -> Tuple[Dict, torch.T
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
-    # init_latents può non esserci (lo ricostruiamo dal seed se manca)
+    # init_latents may be absent — when missing it is rebuilt from the seed.
     init_latents = None
     if init_latents_path.exists():
         init_latents = torch.load(init_latents_path, map_location="cpu")
@@ -213,10 +214,10 @@ def _unet_forward(
     add_time_ids: torch.Tensor,
     guidance_scale: float,
 ) -> torch.Tensor:
-    """Singolo forward dell'UNet con CFG. Lo stato dei LoRA (multiplier su
-    ognuno dei network attivi) e' implicito nel runtime — il caller deve
-    aver gia' settato i multiplier (es. via ExitStack su un sottoinsieme
-    di LoRANetwork)."""
+    """Single UNet forward with CFG. The LoRA state (multiplier on every
+    active network) is implicit at runtime — the caller is responsible
+    for setting the multipliers beforehand (e.g. via ExitStack on a
+    subset of LoRANetwork)."""
     do_cfg = guidance_scale > 1.0
     latent_model_input = torch.cat([latents] * 2) if do_cfg else latents
     latent_model_input = pipe.scheduler.scale_model_input(latent_model_input, t)
@@ -264,20 +265,20 @@ def predict_noise_styled(
     add_time_ids: torch.Tensor,
     guidance_scale: float,
 ) -> torch.Tensor:
-    """Forward con SOLO i `networks_to_activate` attivi, ognuno con la sua
-    scale. Tutti gli altri network in `all_networks` sono disattivati
+    """Forward with ONLY ``networks_to_activate`` active, each at its
+    own scale. Every other network in ``all_networks`` is disabled
     (multiplier=0).
 
-    Sotto, gli N LoRANetwork annidati via apply_to() wrap-pano il forward
-    del UNet additivamente: out = base(x) + sum_i s_i * LoRA_i(x).
+    Underneath, the N nested LoRANetwork instances wrap the UNet forward
+    additively: ``out = base(x) + sum_i s_i * LoRA_i(x)``.
     """
-    # Disattiva tutto
+    # Disable every network first.
     for net in all_networks:
         for lora in net.unet_loras:
             lora.multiplier = 0.0
-    # ExitStack: __enter__ di ogni network attivato setta
-    # lora.multiplier = 1.0 * net.lora_scale per i suoi unet_loras.
-    # __exit__ rimette a 0.
+    # ExitStack: each activated network's __enter__ sets
+    # lora.multiplier = 1.0 * net.lora_scale on its unet_loras, and
+    # __exit__ resets them to 0.
     with ExitStack() as stack:
         for net, scale in zip(networks_to_activate, scales_to_activate):
             net.set_lora_slider(scale=float(scale))
@@ -326,14 +327,14 @@ def main() -> None:
         if module_name not in DEFAULT_TARGET_REPLACE:
             DEFAULT_TARGET_REPLACE.append(module_name)
 
-    # ---- Carica N LoRANetwork distinti ----
-    # Ogni istanza di LoRANetwork chiama apply_to() nei suoi unet_loras
-    # (vedi sdxl/core/lora.py:154), agganciandosi al forward del UNet.
-    # Le N istanze si annidano in cascata: out_modulo(x) = base(x) +
-    # sum_i (mult_i * LoRA_i(x)), che e' la composizione additiva paper-style.
-    # I multiplier sono settati per-network via __enter__ (= 1.0 * lora_scale)
-    # e azzerati nei network non attivi, in modo da realizzare il subset
-    # corretto per ogni regione mascherata.
+    # ---- Load N distinct LoRANetwork instances ----
+    # Each LoRANetwork calls apply_to() on its unet_loras (see
+    # sdxl/core/lora.py), hooking into the UNet forward. The N instances
+    # nest in cascade: out_module(x) = base(x) + sum_i (mult_i * LoRA_i(x)),
+    # which is the additive aggregation used in the paper. The
+    # multipliers are set per-network via __enter__ (= 1.0 * lora_scale)
+    # and zeroed on inactive networks so that the right subset is active
+    # in each masked region.
     print(f"[phase3] loading {num_sliders} slider(s) as separate LoRANetwork instances")
     all_networks: List[LoRANetwork] = []
     for i, sp in enumerate(slider_paths):
@@ -354,13 +355,13 @@ def main() -> None:
         m_idx = slider_to_mask[i]
         print(f"  [slider {i}] -> mask[{m_idx}] '{mask_names[m_idx]}'  "
               f"scale={slider_scales[i]}  path={sp}")
-    # Disattiva subito tutti i multiplier; verranno attivati selettivamente
-    # nel loop per ogni mask.
+    # Disable every multiplier up front; they are activated selectively
+    # inside the per-mask loop.
     for net in all_networks:
         for lora in net.unet_loras:
             lora.multiplier = 0.0
 
-    # Mappa mask_idx -> lista di (network_idx, scale) per quella mask
+    # Map mask_idx -> list of (network_idx, scale) for that mask.
     mask_to_active: List[List[Tuple[int, float]]] = [[] for _ in range(num_masks)]
     for s_idx, m_idx in enumerate(slider_to_mask):
         mask_to_active[m_idx].append((s_idx, slider_scales[s_idx]))
@@ -418,30 +419,31 @@ def main() -> None:
 
     latent_h = height // pipe.vae_scale_factor
     latent_w = width // pipe.vae_scale_factor
-    # Pre-calcola le maschere a risoluzione latent
+    # Pre-compute the masks at latent resolution.
     latent_masks: List[torch.Tensor] = []
     for m in mask_img_tensors:
         lm = F.interpolate(m, size=(latent_h, latent_w), mode="nearest").to(
             device=device, dtype=latents.dtype
         )
         latent_masks.append(lm)
-    # Avviso overlap (sum > 1 in qualche pixel = maschere sovrapposte)
+    # Overlap warning (sum > 1 on a pixel = masks overlap).
     if num_masks > 1:
         sum_lm = torch.zeros_like(latent_masks[0])
         for lm in latent_masks:
             sum_lm = sum_lm + lm
         n_overlap = int((sum_lm > 1).sum().item())
         if n_overlap > 0:
-            print(f"[phase3] WARNING: {n_overlap} latent pixel(s) hanno overlap "
-                  f"di maschere (sum>1). La formula assume maschere disgiunte; "
-                  f"nei pixel sovrapposti l'effetto si somma — verifica le mask SAM.")
+            print(f"[phase3] WARNING: {n_overlap} latent pixel(s) have "
+                  f"overlapping masks (sum>1). The formula assumes "
+                  f"disjoint masks; on overlapping pixels the effects "
+                  f"add up — check the SAM masks.")
 
     print(f"[phase3] denoising: steps={steps}  num_masks={num_masks}  "
           f"forward_per_step={1 + num_masks} (1 base + {num_masks} per-mask)")
 
     with torch.no_grad():
         for t in timesteps:
-            # ---- 1 forward base (tutti i LoRA off) ----
+            # ---- 1 base forward (every LoRA off) ----
             eps_base = predict_noise_base(
                 pipe=pipe, all_networks=all_networks,
                 latents=latents, t=t,
@@ -515,7 +517,7 @@ def main() -> None:
         }
         metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     else:
-        # Legacy mode: 1 mask, 1 slider — metriche storiche identiche
+        # Legacy mode: 1 mask, 1 slider — same metrics as before.
         mask_img_tensor = mask_img_tensors[0]
         base_pil = Image.open(args.run_dir / "base.png").convert("RGB")
         base_t = torch.from_numpy(np.array(base_pil)).permute(2, 0, 1).float() / 255.0

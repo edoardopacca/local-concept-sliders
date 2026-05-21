@@ -10,29 +10,22 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# two_subjects_smile_age_on_man.slurm — 2 slider COMPOSTI sullo stesso target
-# =============================================================================
-# Composizione paper-style (Concept Sliders Metodo 2 / ExitStack) realizzata
-# via PEFT multi-adapter: due slider attivi simultaneamente sullo stesso
-# layer LoRA, somma additiva delle delta dentro la regione mascherata dal
-# target "man".
+# 2 composed sliders on a single target. Compositional aggregation realised
+# via PEFT multi-adapter: two sliders active at the same time on the same
+# LoRA layer, with their deltas summed additively inside the region matched
+# by the target "man".
 #
-#   --target_prompt man                    # 1 sola regione mascherata
-#   --slider_paths smile.pt age.pt         # 2 slider
-#   --slider_to_target 0 0                 # entrambi -> target "man"
-#   --lora_scales s_smile s_age            # 1 scale per slider
+#   --target_prompt man                    # one masked region
+#   --slider_paths smile.pt age.pt         # 2 sliders
+#   --slider_to_target 0 0                 # both -> target "man"
+#   --lora_scales s_smile s_age            # one scale per slider
 #
-# La donna non e' target -> resta baseline (zero LoRA).
+# The woman is not a target and therefore stays on the baseline (no LoRA).
 #
-# 3 run, scale (smile, age):
-#   01_scale_0_0.png    -> smile=0  age=0   (baseline, tutto OFF)
-#   02_scale_1_-1.png   -> smile=1  age=-1  (sorride e ringiovanisce lieve)
-#   03_scale_2_-2.png   -> smile=2  age=-2  (estremi: sorriso ampio + giovane)
-#
-# Differenza vs precedente impl (TARGETS=man man con due maschere uguali):
-# il vecchio approccio produceva la MEDIA dei due output (denumeratore=2),
-# dimezzando di fatto l'effetto di ogni slider. Quello nuovo somma le delta
-# (paper-style), quindi le scale agiscono a piena forza.
+# 3 runs, scales (smile, age):
+#   01_scale_0_0.png    -> smile=0  age=0   (baseline, everything OFF)
+#   02_scale_1_-1.png   -> smile=1  age=-1  (light smile + light rejuvenation)
+#   03_scale_2_-2.png   -> smile=2  age=-2  (extremes: broad smile + young)
 # =============================================================================
 
 set -euo pipefail
@@ -50,14 +43,14 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER_SMILE="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 SLIDER_AGE="flux/trained_sliders/sliders/age_flux_v1_symmetric_rank16_xattn_alpha1/flux-age_flux_v1_symmetric/slider_0.pt"
 
 PROMPT="a man and a woman facing the camera, studio portrait, neutral expression"
 
-# 1 sola regione (man); entrambi gli slider mappati a quella regione.
+# Single region (man); both sliders mapped to that region.
 TARGET="man"
 SLIDERS=("$SLIDER_SMILE" "$SLIDER_AGE")
 SLIDER_TO_TARGET=(0 0)
@@ -73,14 +66,14 @@ WIDTH=512
 GUIDANCE=3.5
 
 echo "=============================================="
-echo "=== shop_concept: 2 slider COMPOSTI su MAN ==="
+echo "=== shop_concept: 2 composed sliders on MAN ==="
 echo "=============================================="
 echo "prompt          : $PROMPT"
 echo "target          : $TARGET"
 echo "slider 0 (smile): $SLIDER_SMILE"
 echo "slider 1 (age)  : $SLIDER_AGE"
-echo "slider->target  : ${SLIDER_TO_TARGET[*]} (entrambi -> man)"
-echo "woman           : (nessuno slider, baseline)"
+echo "slider->target  : ${SLIDER_TO_TARGET[*]} (both -> man)"
+echo "woman           : (no slider, baseline)"
 echo "seed            : $SEED"
 echo "out_dir         : $OUT_DIR"
 echo ""

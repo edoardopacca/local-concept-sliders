@@ -1,36 +1,28 @@
-# shop_concept: LoRAShop pipeline adattata ai Concept Sliders (Flux)
+# shop_concept package init. See README.md for the task documentation.
 #
-# Contiene tutto il necessario per generare immagini con Flux.1-dev
-# applicando uno o piu' Concept Sliders alla maniera di LoRAShop
-# (mask estratte dall'attenzione del block 19, blending per-token).
+# Importing this package installs a compatibility shim on
+# `torch.nn.functional.scaled_dot_product_attention` that silently drops the
+# `enable_gqa` keyword argument. diffusers >= 0.36 passes this kwarg
+# unconditionally to SDPA, but it only exists in torch >= 2.5; on torch 2.4
+# the underlying SDPA implementation raises
+# `TypeError: unexpected keyword argument 'enable_gqa'`.
 #
-# Modifiche rispetto a LoRAShop-main documentate in CHANGES.md.
-
-# ---------------------------------------------------------------------------
-# Compat shim: diffusers>=0.36 chiama `F.scaled_dot_product_attention` con
-# `enable_gqa=...`. Quel kwarg esiste solo in torch>=2.5; su torch 2.4 la
-# SDPA e' una funzione C che alza `TypeError: unexpected keyword argument
-# 'enable_gqa'`. Il venv `flux-sliders` su HPC Bocconi ha torch 2.4.1+cu124.
+# Dropping the kwarg is semantically a no-op for Flux: `enable_gqa` enables
+# Grouped Query Attention, which requires K/V and Q to have a different
+# number of heads (e.g. Llama). Flux uses the same head count for q/k/v on
+# every attention block, so GQA is never active regardless. diffusers also
+# defaults the kwarg to False, so removing it is equivalent to passing it
+# as False.
 #
-# Installiamo la shim in maniera INCONDIZIONATA: droppiamo `enable_gqa` dagli
-# kwargs prima di delegare alla SDPA reale.
-#
-# Perche' e' safe anche su torch>=2.5 o quando e' chiamata con enable_gqa=True:
-# - `enable_gqa` attiva Grouped Query Attention, usata quando il numero di
-#   head di K/V e' diverso da quello di Q (es. Llama). Flux ha stesso head
-#   count per q/k/v in tutti i blocks (double e single), quindi GQA non e'
-#   mai attivabile semanticamente. Il kwarg viene passato per default=False
-#   da diffusers, droppare e' identico a passarlo a False.
-#
-# Non usiamo `inspect.signature` per decidere se installare: in torch 2.4 la
-# SDPA e' un builtin e la signature introspettabile e' inaffidabile.
-# ---------------------------------------------------------------------------
+# The shim is installed unconditionally rather than gated on
+# `inspect.signature`, because the SDPA implementation on torch 2.4 is a
+# C-level builtin whose signature is not reliably introspectable.
 def _install_sdpa_enable_gqa_shim() -> None:
     import torch.nn.functional as F
 
     orig = F.scaled_dot_product_attention
     if getattr(orig, "_shop_concept_sdpa_shim", False):
-        return  # shim gia' installata, evita wrap doppio
+        return  # shim already installed, avoid double-wrap
 
     def _sdpa_shim(*args, **kwargs):
         kwargs.pop("enable_gqa", None)

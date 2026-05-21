@@ -68,8 +68,8 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_smile_person Flux               ==="
+echo "=== FASE 3 COMPLETED: eval_smile_person Flux               ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept smile_person \\"
 echo "    --runs_root flux/tasks/masked_lora/runs --device cuda"

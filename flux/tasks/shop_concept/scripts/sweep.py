@@ -1,34 +1,31 @@
 """
-shop_concept/sweep.py
-=====================
-Wrapper CLI per generare una griglia di immagini (seeds x scales) con un
-SINGOLO Concept Slider, caricando Flux UNA volta sola.
+CLI wrapper that generates a grid of images (seeds x scales) with a single
+Concept Slider, loading Flux only once.
 
-Differenza chiave vs lanciare ``generate.py`` in un loop bash:
-  - Il loop bash paga i ~2-3 min di model load (Flux.1-dev pesa 24GB) per
-    ogni immagine, rendendo uno sweep di 8 immagini circa 3x piu' lento
-    di quanto dovrebbe essere. Questo wrapper carica la pipeline una volta
-    e itera internamente sui (seed, scale) pairs.
+Why this exists: running ``generate.py`` in a bash loop pays the ~2-3 min
+Flux load cost (the model weighs ~24 GB) on every image, which makes an
+8-image sweep about 3x slower than needed. This wrapper loads the pipeline
+once and iterates internally over the (seed, scale) pairs.
 
-Limite corrente: single slider, single target. Se ti serve multi-slider
-con sweep, ampliamo in futuro (lo sweep cross-slider e' N-dimensionale,
-servirebbe un design ad hoc).
+Scope: single slider, single target. Multi-slider sweeps would be
+N-dimensional and need a dedicated design; for that case call
+``generate.py`` directly.
 
-Esempio:
-    python -m shop_concept.sweep \\
+Example:
+    python -m flux.tasks.shop_concept.scripts.sweep \\
         --slider_path path/to/slider.pt \\
         --target_prompt "man" \\
         --prompt "a man and a woman facing the camera" \\
         --seeds 42 123 \\
         --scales 0.0 0.3 0.7 1.0 \\
-        --output_dir shop_concept/outputs/sweep_xxx \\
+        --output_dir flux/tasks/shop_concept/outputs/sweep_xxx \\
         --height 512 --width 512 \\
         --num_inference_steps 30 \\
         --guidance_scale 3.5 \\
         --edit_start_step 8 \\
-        --cache_dir shop_concept/_peft_cache
+        --cache_dir flux/tasks/shop_concept/_peft_cache
 
-Produce: shop_concept/outputs/sweep_xxx/seed<S>_scale<C>.png
+Output: flux/tasks/shop_concept/outputs/sweep_xxx/seed<S>_scale<C>.png
 """
 
 from __future__ import annotations
@@ -42,7 +39,6 @@ import torch
 from safetensors.torch import load_file
 
 if __package__ is None or __package__ == "":
-    # __file__ = .../flux/tasks/shop_concept/scripts/sweep.py → parents[4] = repo root
     _REPO_ROOT = Path(__file__).resolve().parents[4]
     sys.path.insert(0, str(_REPO_ROOT))
     from flux.tasks.shop_concept.lib.flux_real_pipeline import RealGenerationPipeline  # noqa: E402
@@ -60,8 +56,7 @@ else:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Sweep (seed x scale) su un singolo slider, "
-                    "caricando Flux una sola volta."
+        description="Seed x scale sweep on a single slider, loading Flux only once."
     )
 
     # Flux model
@@ -75,13 +70,13 @@ def main():
         "--slider_path",
         type=str,
         required=True,
-        help="Path a un singolo slider (.pt auto-convert o .safetensors PEFT).",
+        help="Path to a single slider (.pt auto-converted or .safetensors PEFT).",
     )
     parser.add_argument(
         "--target_prompt",
         type=str,
         required=True,
-        help="Target single (deve essere sottostringa esatta di --prompt).",
+        help="Single target_prompt; must be an exact substring of --prompt.",
     )
     parser.add_argument("--prompt", type=str, required=True)
 
@@ -91,14 +86,14 @@ def main():
         type=int,
         nargs="+",
         required=True,
-        help="Lista di seed (asse 1 dello sweep).",
+        help="Seed list (axis 1 of the sweep).",
     )
     parser.add_argument(
         "--scales",
         type=float,
         nargs="+",
         required=True,
-        help="Lista di scale LoRA (asse 2 dello sweep). 0.0 = slider off.",
+        help="Slider scale list (axis 2 of the sweep). 0.0 = slider off.",
     )
 
     # Output
@@ -106,7 +101,7 @@ def main():
         "--output_dir",
         type=str,
         required=True,
-        help="Cartella dove salvare i PNG seed<S>_scale<C>.png.",
+        help="Directory where seed<S>_scale<C>.png files are written.",
     )
 
     # Generation
@@ -126,9 +121,10 @@ def main():
         "--dump_masks",
         action="store_true",
         help=(
-            "Se settato, salva le maschere (soft + binary seg) usate per il "
-            "blend LoRAShop come PNG accanto a ciascuna immagine. "
-            "Utile per diagnosticare quando lo slider si applica fuori dal target."
+            "When set, save the masks (soft + binary segmentation) used by "
+            "the mask-aware blend as PNG next to each generated image. "
+            "Useful for diagnosing cases in which the slider leaks outside "
+            "the intended target region."
         ),
     )
 
@@ -137,14 +133,15 @@ def main():
     # ---- Validate ----
     if args.target_prompt not in args.prompt:
         raise ValueError(
-            f"target_prompt '{args.target_prompt}' non e' sottostringa esatta "
-            f"di --prompt. LoRAShop lo richiede per il token-slicing."
+            f"target_prompt '{args.target_prompt}' is not a literal substring "
+            f"of --prompt; the mask-aware pipeline requires an exact match for "
+            f"token slicing."
         )
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ---- Load Flux (UNA volta) ----
+    # ---- Load Flux (only once) ----
     print(f"[sweep] loading Flux pipeline from {args.model_name}")
     t0 = time.time()
     pipe = RealGenerationPipeline.from_pretrained(
@@ -153,7 +150,7 @@ def main():
     ).to(args.device)
     print(f"[sweep] pipeline loaded in {time.time() - t0:.1f}s")
 
-    # ---- Prepare slider (auto-convert .pt -> .safetensors PEFT se serve) ----
+    # ---- Prepare slider (auto-convert .pt -> .safetensors PEFT if needed) ----
     print(f"[sweep] preparing slider: {args.slider_path}")
     slider_safetensors = prepare_slider_as_safetensors(
         args.slider_path, args.cache_dir
@@ -197,8 +194,8 @@ def main():
             generator = torch.Generator(device=args.device).manual_seed(seed)
             t_img = time.time()
 
-            # Se --dump_masks e' settato, passa un prefisso path senza estensione:
-            # la pipeline appendera' _target{i}_{seg,soft}.png per ogni target.
+            # When --dump_masks is set, pass an extensionless prefix path: the
+            # pipeline appends _target{i}_{seg,soft}.png for each target.
             _mask_dump_path = (
                 str(out_dir / f"seed{seed}_scale{scale}_mask")
                 if args.dump_masks

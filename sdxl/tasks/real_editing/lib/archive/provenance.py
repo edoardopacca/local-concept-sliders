@@ -19,7 +19,7 @@ def get_all_sources() -> List[Dict[str, str]]:
 
 
 def generate_external_sources_md(output_path: Path) -> None:
-    """Write EXTERNAL_SOURCES.md from all registered provenance entries."""
+    """Write a per-component provenance manifest from all registered entries."""
     from sdxl.tasks.real_editing.lib.inversion.registry import BACKENDS
 
     rows = []

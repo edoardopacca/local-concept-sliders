@@ -1,35 +1,27 @@
-# shop_concept/flux_blocks.py
-# ---------------------------------------------------------------------------
-# Derivato da LoRAShop-main/flux_blocks.py.
+# Adapted from LoRAShop (gemlab-vt/LoRAShop, MIT). The upstream module is
+# left functionally intact; the additions specific to this project are:
 #
-# DIFF RISPETTO ALL'ORIGINALE (vedi anche CHANGES.md):
-#   1. set_adapter(module, target_idx) e' stato esteso in set_adapter(
-#      module, target_idx, target_lora_scales=None): oltre a selezionare
-#      l'adapter PEFT `default_{target_idx}`, imposta esplicitamente
-#      `module.scaling[adapter] = target_lora_scales[target_idx]` se la
-#      lista e' passata. Questo rende supportato il lora_scale CONTINUO
-#      dei Concept Sliders (non solo 0.0 / 1.0).
-#   2. In tutte le chiamate interne a set_adapter(...) passiamo
-#      `joint_attention_kwargs.get("target_lora_scales")`.
-#   3. enable_lora_all / disable_lora_all NON toccati: mantengono il
-#      comportamento LoRAShop (scaling=1.0 come "ON", 0.0 come "OFF").
-#      Nota che dopo la conversione degli slider a PEFT con fold_alpha=True
-#      (vedi convert_slider_to_peft.py), "scaling=1.0" coincide con
-#      "slider applicato a piena forza di training"; eventuali valori di
-#      slider diversi da 1.0 vengono applicati via set_adapter nel loop
-#      per-target.
-#   4. Multi-adapter per target (composizione paper-style). _set_adapter_with_scale
-#      accetta target_to_sliders=None|List[List[int]] (mappa target_idx ->
-#      [slider_idx, ...]). Se passato, attiva contemporaneamente tutti gli
-#      adapter PEFT default_{slider_idx} sullo stesso layer: PEFT somma
-#      additivamente le delta -> out = W*x + sum_i scale_i * B_i A_i * x.
-#      Equivalente al Metodo 2 di Concept Sliders (ExitStack su LoRANetwork)
-#      ma applicato dentro la regione mascherata (mask-aware), non global.
-#      Se target_to_sliders=None, comportamento identico a prima
-#      (1 slider per target). target_lora_scales e' indicizzato per
-#      slider_idx in entrambi i casi (con identity-mapping coincide con
-#      target_idx come prima).
-# ---------------------------------------------------------------------------
+#   1. `set_adapter()` and the shared helper `_set_adapter_with_scale()`
+#      accept a `target_lora_scales` argument that propagates per-slider
+#      continuous scales into PEFT's `scaling` table, replacing LoRAShop's
+#      on/off toggle (which only ever used scaling = 0.0 or 1.0).
+#   2. `_set_adapter_with_scale()` additionally accepts a
+#      `target_to_sliders` mapping so that several PEFT adapters can be
+#      active on the same layer at the same time. PEFT then sums their
+#      deltas additively (`W·x + sum_i scale_i · B_i A_i · x`), which is
+#      the compositional aggregation described in Appendix D of the
+#      paper (the LoRAShop-style adaptation with internal masks).
+#   3. The `forward()` methods accept an extra `**kwargs` and the
+#      single-block variant splits its return into the
+#      `(encoder_hidden_states, hidden_states)` tuple expected by
+#      diffusers >= 0.36.
+#
+# `enable_lora_all` / `disable_lora_all` are not touched: they keep the
+# upstream behaviour (scaling = 1.0 / 0.0 as a layer-wide toggle). After
+# the slider conversion done by `convert_slider_to_peft.py` with
+# `fold_alpha = True`, scaling = 1.0 already coincides with "slider applied
+# at training strength"; any other scale is applied per target inside
+# `_set_adapter_with_scale`.
 
 import torch
 import math
@@ -69,32 +61,33 @@ def apply_rotary_emb(x, freqs_cis, use_real=True, use_real_unbounded_dim=-1):
 
 
 # ---------------------------------------------------------------------------
-# Helper condiviso (vs LoRAShop originale dove era copiato identico nelle
-# due classi, senza il parametro target_lora_scales).
+# Shared helper for `set_adapter` on both block classes. In upstream LoRAShop
+# the equivalent code was inlined identically inside each class and took no
+# per-slider scale; we factor it out and route the additional arguments
+# through this single entry point.
 # ---------------------------------------------------------------------------
 def _set_adapter_with_scale(module_to_set: nn.Module,
                             target_idx: int,
                             target_lora_scales=None,
                             target_to_sliders=None):
-    """Attiva uno o piu' adapter PEFT per il dato `target_idx` su tutti i
-    tuner layers del modulo, e imposta la loro scaling.
+    """Activate one or more PEFT adapters on every tuner layer inside
+    ``module_to_set`` and set their scaling.
 
-    Mapping:
-      * Se `target_to_sliders is None` (default, retro-compatibile):
-          1 slider per target -> attiva solo `default_{target_idx}` con scale
-          `target_lora_scales[target_idx]`.
-      * Se `target_to_sliders` e' una sequenza di liste (mappa
-        target_idx -> [slider_idx, ...]):
-          attiva tutti gli adapter `default_{slider_idx}` con scale
-          `target_lora_scales[slider_idx]`. PEFT somma additivamente le
-          delta dei vari adapter attivi (equivalente al Metodo 2 di
-          Concept Sliders / ExitStack), applicate dentro la regione
-          mascherata dal target.
+    Two modes:
 
-    Nota: con multi-adapter il forward LoRA per quella regione produce
-    `out = W·x + sum_i scale_i · B_i A_i · x`. Le maschere e i loop
-    per-target rimangono invariati: cambia solo cosa c'e' "dentro" un
-    target.
+    * ``target_to_sliders is None`` (default, upstream LoRAShop behaviour):
+      activate the single adapter ``default_{target_idx}`` with scale
+      ``target_lora_scales[target_idx]``.
+    * ``target_to_sliders`` is a list of lists mapping ``target_idx`` to a
+      sequence of slider indices: activate ``default_{slider_idx}`` for
+      every ``slider_idx`` in that list, each with scale
+      ``target_lora_scales[slider_idx]``. With several adapters active on
+      the same layer, PEFT sums their deltas additively
+      ``out = W·x + sum_i scale_i · B_i A_i · x`` (Concept-Sliders
+      compositional aggregation applied inside the masked region).
+
+    Masks and the per-target outer loop are left unchanged; this helper only
+    controls what is activated inside a given target.
     """
     if target_to_sliders is not None:
         slider_idxs = list(target_to_sliders[target_idx])
@@ -114,9 +107,9 @@ def _set_adapter_with_scale(module_to_set: nn.Module,
 
     for m in module_to_set.modules():
         if isinstance(m, BaseTunerLayer):
-            # PEFT BaseTunerLayer.set_adapter accetta str o List[str].
-            # Con una lista, tutti gli adapter restano in active_adapters
-            # e il forward somma le loro delta (composizione paper-style).
+            # BaseTunerLayer.set_adapter accepts either a single name or a
+            # list: with a list every adapter stays in active_adapters and
+            # the forward pass sums their deltas.
             m.set_adapter(adapter_names)
             for name, scale_val in zip(adapter_names, scales):
                 if scale_val is not None:
@@ -175,10 +168,6 @@ class TransformerBlock(nn.Module):
         self.enable_lora(self.ff)
         self.enable_lora(self.ff_context)
 
-    # MODIFICATO (shop_concept): accetta target_lora_scales e target_to_sliders.
-    # Con target_to_sliders settato, attiva piu' adapter PEFT
-    # contemporaneamente per lo stesso target_idx (composizione paper-style:
-    # somma additiva delle delta dei vari slider sulla stessa regione).
     def set_adapter(self, module_to_set: nn.Module, adapter_idx: int,
                     target_lora_scales=None, target_to_sliders=None):
         _set_adapter_with_scale(module_to_set, adapter_idx,
@@ -309,8 +298,8 @@ class TransformerBlock(nn.Module):
         interest_token_idxs = target_token_idxs
 
         joint_attention_kwargs = joint_attention_kwargs if joint_attention_kwargs is not None else {}
-        target_lora_scales = joint_attention_kwargs.get("target_lora_scales")  # shop_concept
-        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")    # shop_concept multi-LoRA
+        target_lora_scales = joint_attention_kwargs.get("target_lora_scales")
+        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")
 
         # Constructing the attn_output
 
@@ -521,10 +510,9 @@ class TransformerBlock(nn.Module):
 
 
     def forward(self, hidden_states, encoder_hidden_states, temb, image_rotary_emb=None, joint_attention_kwargs=None, **kwargs):
-        # **kwargs: compat shim per diffusers >= 0.36 che puo' passare
-        # kwargs addizionali (es. attention_mask, controlnet_*) che LoRAShop
-        # 0.31 non conosceva. Li assorbiamo senza usarli, il comportamento
-        # semantico e' identico.
+        # **kwargs absorbs extra keyword arguments that diffusers >= 0.36
+        # may pass to attention blocks (e.g. attention_mask, controlnet_*);
+        # they are not used here.
         if joint_attention_kwargs["mode"] == "blend":
             self.enable_lora_all()
             return self.forward_blend_block(hidden_states, encoder_hidden_states, temb, image_rotary_emb, joint_attention_kwargs)
@@ -590,10 +578,6 @@ class SingleTransformerBlock(nn.Module):
                 for active_adapter in module.active_adapters:
                     module.scaling[active_adapter] = 1.0
 
-    # MODIFICATO (shop_concept): accetta target_lora_scales e target_to_sliders.
-    # Con target_to_sliders settato, attiva piu' adapter PEFT
-    # contemporaneamente per lo stesso target_idx (composizione paper-style:
-    # somma additiva delle delta dei vari slider sulla stessa regione).
     def set_adapter(self, module_to_set: nn.Module, adapter_idx: int,
                     target_lora_scales=None, target_to_sliders=None):
         _set_adapter_with_scale(module_to_set, adapter_idx,
@@ -695,8 +679,8 @@ class SingleTransformerBlock(nn.Module):
         target_token_idxs = joint_attention_kwargs["target_token_idxs"]
         interest_token_idxs = target_token_idxs
         joint_attention_kwargs = joint_attention_kwargs if joint_attention_kwargs is not None else {}
-        target_lora_scales = joint_attention_kwargs.get("target_lora_scales")  # shop_concept
-        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")    # shop_concept multi-LoRA
+        target_lora_scales = joint_attention_kwargs.get("target_lora_scales")
+        target_to_sliders = joint_attention_kwargs.get("target_to_sliders")
 
         # LoRA pass for all targets
         lora_outputs = []
@@ -869,18 +853,14 @@ class SingleTransformerBlock(nn.Module):
         joint_attention_kwargs=None,
         **kwargs,
     ):
-        # Compat diffusers>=0.36: i SingleTransformerBlock ricevono
-        # `encoder_hidden_states` separato e devono restituire la tupla
-        # (encoder_hidden_states_out, hidden_states_out), come gia' fanno i
-        # double blocks. In 0.31 (e nelle forward_* interne) il single block
-        # lavora invece su una singola `hidden_states` gia' concatenata
-        # [encoder; image]. Quindi:
-        #   - se riceviamo encoder_hidden_states != None: concat all'inizio,
-        #     chiamiamo la logica interna invariata, poi split finale e
-        #     return tuple.
-        #   - se riceviamo encoder_hidden_states is None (uso legacy o
-        #     prior-extract dalla nostra pipeline): comportamento originale
-        #     LoRAShop, return single tensor concatenato.
+        # diffusers >= 0.36 passes `encoder_hidden_states` separately and
+        # expects the (encoder_out, image_out) tuple back, while the
+        # internal forward_* methods inherited from LoRAShop work on a
+        # single concatenated tensor. We concat on entry and split on
+        # return so the inner logic stays unchanged. When the caller does
+        # not pass `encoder_hidden_states` (legacy path, used by our own
+        # prior-extraction phase) we fall back to the single-tensor
+        # behaviour.
         split_return = encoder_hidden_states is not None
         if split_return:
             enc_len = encoder_hidden_states.shape[1]
@@ -902,6 +882,5 @@ class SingleTransformerBlock(nn.Module):
             raise ValueError("Invalid value in joint_attention_kwargs['mode'], it should be one of ('blend', 'pass', 'prior', 'invert')")
 
         if split_return:
-            # diffusers>=0.36 si aspetta tuple (enc_out, img_out)
             return out[:, :enc_len], out[:, enc_len:]
         return out

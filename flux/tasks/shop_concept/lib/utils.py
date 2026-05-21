@@ -1,8 +1,5 @@
-# shop_concept/utils.py
-# ---------------------------------------------------------------------------
-# COPIA IDENTICA di LoRAShop-main/utils.py.
-# Nessuna modifica funzionale. Mantenuta per self-containment del package.
-# ---------------------------------------------------------------------------
+# Vendored verbatim from LoRAShop (gemlab-vt/LoRAShop, MIT). Kept inside
+# this package so the task is self-contained.
 
 from safetensors import safe_open
 

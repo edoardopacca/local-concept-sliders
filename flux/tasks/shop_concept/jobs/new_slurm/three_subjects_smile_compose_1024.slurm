@@ -10,25 +10,20 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# three_subjects_smile_compose_1024.slurm
-# =============================================================================
-# 3 soggetti (man, woman, child) in scena complessa con sfondo, risoluzione
-# 1024x1024. Slider smile applicato indipendentemente a ognuno con scale
-# diverse per ogni soggetto.
+# 3 subjects (man, woman, child) in a complex background scene at 1024x1024.
+# The smile slider is applied independently to each subject with its own scale.
 #
 # Setup:
-#   * 1 file slider (smile_v5_symmetric) caricato 3 volte come adapter
-#     PEFT distinti -> permette scale diverse per i 3 target.
-#   * 3 target_prompt: man, woman, child (in quest'ordine, perche' "man"
-#     e' sottostringa di "woman" -> ordine conta per prompt.index()).
-#   * slider_to_target: 0 1 2 (1 slider per target, identity mapping).
+#   * one slider file (smile_v5_symmetric) loaded three times as distinct
+#     PEFT adapters, which lets each target receive its own scale.
+#   * three target_prompts: man, woman, child (in this order, because "man"
+#     is a substring of "woman" and the order matters for prompt.index()).
+#   * slider_to_target: 0 1 2 (one slider per target, identity mapping).
 #
-# 3 run, scale (s_man, s_woman, s_child):
-#   01_all_zero.png        -> 0   0   0     (baseline, tutti neutri)
-#   02_mid_split.png       -> -1  0   1     (man frown, woman neutra, child smile)
-#   03_extreme_split.png   -> -2  0   2     (estremi opposti su man e child)
-#
-# Costo: 1024^2 ~4x token rispetto 512 -> ~25-30 min totali su A100 stud.
+# 3 runs, scales (s_man, s_woman, s_child):
+#   01_all_zero.png        -> 0   0   0     (baseline, neutral for all)
+#   02_mid_split.png       -> -1  0   1     (man frown, woman neutral, child smile)
+#   03_extreme_split.png   -> -2  0   2     (opposite extremes on man and child)
 # =============================================================================
 
 set -euo pipefail
@@ -46,16 +41,17 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER_SMILE="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 
 PROMPT="a man, a woman, and a child sitting at a wooden table in a cozy cafe with warm lights and bookshelves in the background, looking at the camera, neutral expression, professional photo"
 
-# Importante: ordine man, woman, child -> "man" matcha "a man," (non "woMan")
+# Order matters: "man" must come before "woman" so that prompt.index("man")
+# matches "a man," rather than the "man" inside "woman".
 TARGETS=(man woman child)
 
-# Stesso slider caricato 3 volte come adapter distinti
+# Same slider file loaded 3 times as distinct PEFT adapters.
 SLIDERS=("$SLIDER_SMILE" "$SLIDER_SMILE" "$SLIDER_SMILE")
 SLIDER_TO_TARGET=(0 1 2)
 
@@ -70,7 +66,7 @@ WIDTH=1024
 GUIDANCE=3.5
 
 echo "=========================================================="
-echo "=== shop_concept: 3 soggetti, smile per-target, 1024^2 ==="
+echo "=== shop_concept: 3 subjects, per-target smile, 1024^2 ==="
 echo "=========================================================="
 echo "prompt          : $PROMPT"
 echo "targets         : ${TARGETS[*]}"

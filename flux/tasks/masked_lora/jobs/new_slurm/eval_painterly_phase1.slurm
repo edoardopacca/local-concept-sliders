@@ -95,7 +95,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_painterly Flux                  ==="
+echo "=== FASE 1 COMPLETED: eval_painterly Flux                  ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_painterly_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_painterly_* | wc -l)"

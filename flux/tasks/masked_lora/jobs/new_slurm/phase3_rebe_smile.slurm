@@ -13,13 +13,13 @@
 # =============================================================================
 # phase3_rebe_smile.slurm
 # =============================================================================
-# Phase 3 masked LoRA — smile_person × 20 run — per Rebe.
+# Phase 3 masked LoRA — smile_person × 20 run .
 # Prerequisiti in RUNS_ROOT:
 #   eval_smile_person_{01..20}/base.png + mask_target.png + metadata.json
 #
 # Pesi richiesti (in $FERT_REPO):
 #   trial_v1 : flux/trained_sliders/sliders/trial_v1/smile_person_flux_v1/flux-smile_person_flux_v1/slider_0.pt
-#   federico : flux/trained_sliders/sliders/federico_v2/flux-smile_flux_v2_custom/slider_0.pt
+#   v2_custom: flux/trained_sliders/sliders/federico_v2/flux-smile_flux_v2_custom/slider_0.pt
 #
 # Output per ogni run:
 #   edited_smile_t_s{1,1.5,2}.png   (trial_v1)
@@ -46,7 +46,7 @@ F_ROOT="$FERT_REPO/flux/trained_sliders/sliders/federico_v2"
 mkdir -p flux/tasks/masked_lora/logs "$CACHE_DIR"
 
 echo "================================================================"
-echo "=== PHASE 3 — smile_person × 20 run — Rebe               ==="
+echo "=== PHASE 3 — smile_person × 20 run               ==="
 echo "================================================================"
 nvidia-smi
 echo ""
@@ -93,7 +93,7 @@ run_concept "smile_person" \
     "smile_f" "1 2 3"
 
 echo "================================================================"
-echo "=== PHASE 3 smile COMPLETATA                               ==="
+echo "=== PHASE 3 smile COMPLETED                               ==="
 echo "  smile_t (trial_v1)  : s1, s1.5, s2"
-echo "  smile_f (federico)  : s1, s2, s3"
+echo "  smile_f (v2_custom) : s1, s2, s3"
 echo "================================================================"

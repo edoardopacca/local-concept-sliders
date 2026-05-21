@@ -1,7 +1,7 @@
 """Tight Inversion backend: DDIM + gradient-descent optimization + IP-Adapter.
 
 Adapted from the public HuggingFace Space ``tight-inversion/tight-inversion``
-(commit b9919c2).  See EXTERNAL_SOURCES.md for full provenance.
+(commit b9919c2). See the "Origin" section of the task README for the full provenance.
 
 Paper : "Tight Inversion: Image-Conditioned Inversion for Real Image Editing"
         Kadosh et al., arXiv:2502.20376, ICCV 2025 Workshop.

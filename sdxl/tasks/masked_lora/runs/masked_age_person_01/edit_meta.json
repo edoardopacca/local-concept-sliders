@@ -1,7 +1,0 @@
-{
-  "phase": "masked_edit",
-  "output_image": "edited_age_s3.0.png",
-  "slider_path": "sdxl/trained_sliders/sliders/age_person_sdxl_v1_alpha1.0_rank4_noxattn/age_person_sdxl_v1_alpha1.0_rank4_noxattn_last.safetensors",
-  "slider_scale": 3.0,
-  "start_noise": 750
-}

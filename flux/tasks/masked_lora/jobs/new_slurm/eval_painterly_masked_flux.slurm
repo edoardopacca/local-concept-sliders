@@ -1,6 +1,5 @@
 #!/bin/bash
 #SBATCH --job-name=eval_painterly_masked_flux
-#SBATCH --account=3352759
 #SBATCH --partition=gpunew
 #SBATCH --qos=normal
 #SBATCH --gpus=1

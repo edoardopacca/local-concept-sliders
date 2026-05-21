@@ -12,11 +12,11 @@
 # =============================================================================
 # eval_curlyhair_phase1.slurm
 # =============================================================================
-# FASE 1 — Genera 20 immagini base per il set di valutazione curlyhair.
-#
-# Slider usato in fase 3: curlyhair_man_sdxl_v1 (gender-specific per uomini).
-# Prompt con almeno un uomo in ogni immagine (speculare ai prompt di age/smile
-# che usano donne). Semi identici 1001–1020 per uniformità.
+# PHASE 1 — Generate the 20 base images for the curlyhair evaluation
+# set. Phase 3 will apply the general curlyhair slider (curlyhair_person)
+# to each base image inside an externally-provided mask (§4 of the
+# paper). Each prompt contains at least one human subject; seeds
+# 1001-1020 are shared across all concepts for uniformity.
 #
 # Output: sdxl/tasks/masked_lora/runs/eval_curlyhair_{01..20}/
 # =============================================================================
@@ -98,7 +98,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_curlyhair                       ==="
+echo "=== FASE 1 COMPLETED: eval_curlyhair                       ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_curlyhair_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_curlyhair_* | wc -l)"

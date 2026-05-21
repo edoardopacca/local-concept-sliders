@@ -53,9 +53,9 @@ def load_slider(
 
 
 def _load_slider_state_dict(path, map_location=None):
-    """Carica lo state_dict di uno slider supportando sia .pt (torch.load)
-    sia .safetensors (safetensors.torch.load_file). I .safetensors caricano
-    sempre su CPU; usa .to(device) sul network dopo se serve.
+    """Load a slider state_dict from either a .pt (torch.load) or a
+    .safetensors file (safetensors.torch.load_file). .safetensors always
+    loads on CPU; call .to(device) on the network afterwards if needed.
     """
     p = str(path)
     if p.endswith(".safetensors"):

@@ -14,7 +14,7 @@
 # phase1_two_subjects.slurm — Phase 1: genera base image con 2 soggetti
 # =============================================================================
 # Stessa scena del sweep shop_concept (man + woman, studio portrait), ma
-# via pipeline masked_lora (mascheratura SAM manuale dopo, poi edit Van Gogh
+# via the masked_lora pipeline (manual SAM masking afterwards, then Van Gogh edit
 # in phase3).
 #
 # Output: flux/tasks/masked_lora/outputs/<RUN_ID>/base.png + metadata.json
@@ -64,10 +64,10 @@ echo "=== DONE phase1 ==="
 ls -la "flux/tasks/masked_lora/outputs/$RUN_ID"
 echo ""
 echo "Next steps:"
-echo "  1. Sul Mac: ./tools/pull_from_hpc.sh"
+echo "  1. On the local machine: ./tools/pull_from_hpc.sh"
 echo "  2. Sul Mac (interattivo): python mask_SAM/segment_with_sam.py \\"
 echo "       --run_dir flux/tasks/masked_lora/outputs/$RUN_ID \\"
 echo "       --sam_checkpoint mask_SAM/checkpoints/sam_vit_h_4b8939.pth \\"
 echo "       --image_name base.png --mode interactive"
-echo "  3. Sul Mac: ./tools/push_to_hpc.sh   (pusha la maschera su HPC)"
+echo "  3. On the local machine: ./tools/push_to_hpc.sh   (push the mask to HPC)"
 echo "  4. Crea phase3 SLURM e lancialo (slider Van Gogh + RUN_ID)"

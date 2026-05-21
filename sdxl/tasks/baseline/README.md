@@ -1,37 +1,45 @@
-# sdxl/tasks/baseline
+# `sdxl/tasks/baseline/`
 
-**Generazione + applicazione base** di un concept slider SDXL.
+Exploratory task: generate images with SDXL and apply a trained slider
+globally over a sweep of scales. Used during development as a sanity
+check on each newly trained slider (does the direction work? what is
+the dose-response curve?). Not directly reported in the paper; the
+`outputs/` directory is populated locally by each run.
 
-Genera un set di immagini con SDXL e applica uno slider trainato a varie `scale` per visualizzare l'effetto. Niente segmentation, niente masking, niente real image editing — solo "prompt + slider + sweep di scale".
+The main entrypoint reuses
+[`sdxl/trained_sliders/training/scripts/generate_with_sliders.py`](../../trained_sliders/training/scripts/generate_with_sliders.py)
+via `scripts/generate_with_sliders.py` (a thin re-export). Each job
+produces one PNG per scale plus a side-by-side grid.
 
-## Cosa fa
+## Origin
 
-Sotto il cofano riusa `sdxl/trained_sliders/training/scripts/generate_with_sliders.py`:
-- Carica SDXL base
-- Carica lo slider LoRA da `--slider`
-- Genera N immagini per ogni `scale` in `--scales`
-- Salva in `--save_path` una cartella con `scale_X.png` per ogni scala + un grid di confronto
+The generation script is adapted from the upstream Concept Sliders
+codebase ([rohitgandikota/sliders](https://github.com/rohitgandikota/sliders),
+MIT licensed).
 
-## Quando usarlo
+## Layout
 
-- Verificare visivamente l'effetto di uno slider appena trainato
-- Generare baseline (`scale=0`) vs intervento (`scale=2`) per confronti
-- Sweep di scale per vedere la dose-response
-
-## Lancio
-
-```bash
-sbatch sdxl/tasks/baseline/jobs/run_baseline.slurm
+```
+sdxl/tasks/baseline/
+├── scripts/
+│   └── generate_with_sliders.py    # thin entrypoint re-export
+├── jobs/
+│   └── new_slurm/                  # SLURM templates for baseline sweeps
+└── outputs/                        # one subdir per (slider, scene); populated locally
 ```
 
-Customizza dentro lo SLURM:
-- `SLIDER` — path allo slider (`sdxl/trained_sliders/sliders/<nome>.pt` o `.safetensors`)
-- `PROMPT` — testo di generazione
-- `SCALES` — lista di scale da provare
-- `SAVE_PATH` — output dir (default sotto `sdxl/tasks/baseline/outputs/`)
+## Usage
 
-## Output
+```bash
+sbatch sdxl/tasks/baseline/jobs/new_slurm/<your-template>.slurm
+```
 
-`sdxl/tasks/baseline/outputs/<run_name>/` contiene:
-- `scale_0.png`, `scale_1.png`, ... — un PNG per ogni scale
-- `grid.png` — confronto affiancato di tutti gli scale
+Customise inside the SLURM template:
+
+- `SLIDER` — path to the trained slider (`.pt` or `.safetensors`)
+- `PROMPT` — generation prompt
+- `SCALES` — sweep range
+- `SAVE_PATH` — output directory
+
+Output: `outputs/<run>/scale_<s>.png` per scale plus `grid.png` for the
+side-by-side comparison.

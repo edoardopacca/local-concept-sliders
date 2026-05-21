@@ -1,50 +1,47 @@
 #!/usr/bin/env python3
 """
-masked_Lora_FLUX/03_masked_edit.py
-===================================
-Phase 3 - MaskedLoRA multi-path velocity-blend per Flux.1-dev.
+Phase 3 of the external mask-guided pipeline on Flux: multi-path
+velocity blend with N disjoint masks and M sliders per mask.
 
-Generalizzato a N maschere disgiunte + M slider per maschera (composizione
-paper-style via PEFT multi-adapter). Per ogni timestep:
-  1) v_base       = transformer(latents, LoRA disabilitato)
-  2) Per ogni maschera i:
-       attiva i suoi slider come adapter PEFT con scale `s_ij`
-       v_styled_i = transformer(latents, adapter set i attivo)
+For each denoising timestep:
+  1) v_base       = transformer(latents, LoRA disabled)
+  2) For each mask i:
+       activate its sliders as PEFT adapters with scales `s_ij`
+       v_styled_i = transformer(latents, adapter set i active)
   3) v_pred = (1 - sum_i mask_i) * v_base + sum_i (mask_i * v_styled_i)
      latents = scheduler.step(v_pred, t, latents)
 
-I forward sono fisicamente indipendenti: nessun leak via self-attention,
-il blend avviene FUORI dal transformer. La composizione di piu' slider
-sulla stessa maschera e' il PEFT-equivalente del Metodo 2 di Concept
-Sliders (out = W*x + sum_j scale_j * B_j A_j x), uguale a shop_concept.
+The forward passes are physically independent: there is no leak via
+self-attention because the blend happens OUTSIDE the transformer.
+Composing several sliders inside the same mask is the PEFT equivalent of
+the compositional aggregation used in shop_concept
+(out = W·x + sum_j scale_j · B_j A_j · x).
 
-Costo: (1 + N) forward per step. N=1 -> 2x (uguale al codice originale).
-N=2 -> 3x. N=3 -> 4x. ecc.
+Cost: (1 + N) forwards per step. N=1 -> 2x. N=2 -> 3x. N=3 -> 4x. ...
 
-Modalita' supportate:
+Supported modes:
   * Legacy single-mask single-slider:
-      --mask_name mask.png --slider_path s.pt [--slider_scale 1.0 |
-                                               --slider_scales -2 -1 0 1 2]
-    Lo `--slider_scales` qui e' SWEEP: un PNG per scale, riusando il
-    medesimo load di Flux. Comportamento identico al codice precedente.
+      --mask_name mask.png --slider_path s.pt
+      [--slider_scale 1.0 | --slider_scales -2 -1 0 1 2]
+    With --slider_scales, the script SWEEPS: one PNG per scale, reusing
+    the same Flux load.
   * Multi-mask multi-slider:
       --mask_names m_man.png m_woman.png
       --slider_paths smile.pt age.pt vangogh.pt
       --slider_to_mask 0 0 1
       --slider_scales 1.0 2.0 0.8
-    qui `--slider_scales` ha 1 valore per slider (nessun sweep). Slider
-    0 e 1 si compongono additivamente sulla regione di mask 0; slider 2
-    sulla regione di mask 1. La regione fuori da tutte le maschere
-    rimane baseline.
+    Here --slider_scales has one value per slider (no sweep). Sliders 0
+    and 1 are composed additively inside mask 0; slider 2 is applied
+    inside mask 1. The region outside every mask stays at the baseline.
 
-Inputs attesi nella run_dir (prodotti dai phase 1 e 2):
+Inputs expected in run_dir (produced by phase 1 and 2):
   - base.png        (phase 1)
-  - metadata.json   (phase 1, per seed/prompt/steps/scheduler_config)
-  - mask.png oppure mask_man.png/mask_woman.png/... (phase 2 SAM, binary)
+  - metadata.json   (phase 1; seed / prompt / steps / scheduler_config)
+  - mask.png or mask_man.png / mask_woman.png / ... (phase 2 SAM masks)
 
 Output:
-  - edited.png oppure edited_scaleX.png (legacy sweep) oppure
-    edited_compose.png (multi-mask)
+  - edited.png, edited_scaleX.png (legacy sweep), or edited_compose.png
+    (multi-mask mode)
   - edit_meta.json
 """
 
@@ -65,8 +62,7 @@ from PIL import Image
 from diffusers import FluxPipeline
 from safetensors.torch import load_file
 
-# Riuso della conversione slider .pt -> PEFT safetensors da shop_concept
-# __file__ = .../flux/tasks/masked_lora/scripts/03_masked_edit.py → parents[4] = repo root
+# Reuse the slider .pt -> PEFT safetensors conversion from shop_concept.
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(_REPO_ROOT))
 from flux.tasks.shop_concept.scripts.generate import (  # noqa: E402
@@ -81,52 +77,54 @@ from flux.tasks.shop_concept.scripts.generate import (  # noqa: E402
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        "Phase 3 - MaskedLoRA Flux multi-path blend "
-        "(N maschere x M slider per maschera)."
+        "Phase 3: Flux multi-path mask-guided blend "
+        "(N disjoint masks x M sliders per mask)."
     )
     parser.add_argument("--run_dir", type=Path, required=True)
 
-    # Slider: 1 (legacy) o N (multi)
+    # Slider: 1 (legacy) or N (multi)
     parser.add_argument(
         "--slider_path", type=str, default=None,
-        help="Legacy: 1 solo slider. Mutually exclusive con --slider_paths.",
+        help="Legacy mode: a single slider. Mutually exclusive with "
+             "--slider_paths.",
     )
     parser.add_argument(
         "--slider_paths", type=str, nargs="+", default=None,
-        help="Multi-mode: lista di slider (.pt o .safetensors).",
+        help="Multi-mode: list of sliders (.pt or .safetensors).",
     )
 
-    # Scale: 1 valore (legacy single) | sweep (legacy sweep) |
-    #        N valori (multi, 1 per slider)
+    # Scale: one value (legacy single) | sweep (legacy sweep) |
+    #        N values (multi, one per slider)
     parser.add_argument(
         "--slider_scale", type=float, default=3.0,
-        help="Legacy single-slider: una scala. Default 3.0.",
+        help="Legacy single-slider: one scale. Default 3.0.",
     )
     parser.add_argument(
         "--slider_scales", type=float, nargs="+", default=None,
         help=(
-            "Legacy single-slider: SWEEP, un PNG per scale. "
-            "Multi-mode: 1 scale per slider (no sweep)."
+            "Legacy single-slider: SWEEP, one PNG per scale. "
+            "Multi-mode: one scale per slider (no sweep)."
         ),
     )
 
-    # Mask: 1 (legacy) o N (multi)
+    # Mask: 1 (legacy) or N (multi)
     parser.add_argument(
         "--mask_name", type=str, default=None,
-        help="Legacy: 1 sola mask (default mask.png). Mutually exclusive "
-             "con --mask_names.",
+        help="Legacy mode: a single mask (default mask.png). Mutually "
+             "exclusive with --mask_names.",
     )
     parser.add_argument(
         "--mask_names", type=str, nargs="+", default=None,
-        help="Multi-mode: lista di N maschere (PNG binari nella run_dir).",
+        help="Multi-mode: list of N masks (binary PNGs inside run_dir).",
     )
 
-    # Mapping slider -> mask (solo multi)
+    # Mapping slider -> mask (multi only)
     parser.add_argument(
         "--slider_to_mask", type=int, nargs="+", default=None,
-        help="Multi-mode: slider_to_mask[i]=j -> slider i si applica nella "
-             "regione di mask j. Lunghezza == --slider_paths. Piu' slider "
-             "su stessa mask = composizione additiva (paper-style).",
+        help="Multi-mode: slider_to_mask[i]=j means that slider i is "
+             "applied inside the region of mask j. Length must match "
+             "--slider_paths. Several sliders on the same mask compose "
+             "additively (compositional aggregation).",
     )
 
     parser.add_argument(
@@ -134,17 +132,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=8,
         help=(
-            "Step dal quale attivare il multi-path con LoRA. "
-            "Se >0, i primi N step girano single-forward senza LoRA. "
-            "Default 8: uniformato a shop_concept e baseline globale per "
-            "confronti fair (22/30 step utili). 0 = LoRA attivo da subito."
+            "Step at which the multi-path blend with LoRA becomes active. "
+            "If >0, the first N steps run a single forward without LoRA. "
+            "Default 8: aligned with shop_concept and the baseline so the "
+            "comparisons are fair (22/30 active steps). 0 = LoRA active "
+            "from step 0."
         ),
     )
     parser.add_argument(
         "--lora_fill_rank",
         type=int,
         default=16,
-        help="Rank del LoRA (per il padding PEFT).",
+        help="LoRA rank used for the PEFT zero-padding.",
     )
     parser.add_argument(
         "--cache_dir",
@@ -153,11 +152,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model_id", type=str, default=None,
-        help="Sovrascrive il model_id da metadata.json se fornito.",
+        help="Override model_id from metadata.json when provided.",
     )
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--output_name", type=str, default="edited.png",
-                        help="Nome file output (legacy single o multi).")
+                        help="Output filename (legacy single or multi).")
     return parser
 
 
@@ -168,10 +167,10 @@ def build_parser() -> argparse.ArgumentParser:
 def load_run_inputs(
     run_dir: Path, mask_names: list
 ) -> Tuple[Dict, list]:
-    """Carica metadata.json e una LISTA di maschere (PNG binari grayscale).
+    """Load metadata.json and a LIST of masks (binary grayscale PNGs).
 
-    Ritorna (metadata, [mask_tensor_1, mask_tensor_2, ...]) dove ogni
-    mask_tensor ha shape (1, 1, H, W) in [0, 1].
+    Returns ``(metadata, [mask_tensor_1, mask_tensor_2, ...])`` where each
+    mask_tensor has shape ``(1, 1, H, W)`` with values in ``[0, 1]``.
     """
     metadata_path = run_dir / "metadata.json"
     if not metadata_path.exists():
@@ -196,17 +195,16 @@ def pack_mask_for_flux(
     device: torch.device,
     dtype: torch.dtype,
 ) -> torch.Tensor:
-    """
-    Converte una mask pixel-space (1, 1, H, W) binary in una mask per packed
-    Flux latent tokens (1, N_tokens, 1).
+    """Convert a pixel-space binary mask ``(1, 1, H, W)`` into a mask in
+    Flux's packed latent-token space ``(1, N_tokens, 1)``.
 
-    Flux packing: (B, 16, H/8, W/8) unpacked -> (B, N_tokens, 64) packed
-    dove N_tokens = (H/16) * (W/16) (ogni token = blocco 2x2 nel latent
-    space = blocco 16x16 nel pixel space).
+    Flux packing: ``(B, 16, H/8, W/8)`` unpacked -> ``(B, N_tokens, 64)``
+    packed, with ``N_tokens = (H/16) * (W/16)`` (each token corresponds to
+    a 2x2 block in latent space = 16x16 block in pixel space).
 
-    Usiamo downscale area (media) a risoluzione token, poi binarizziamo
-    con soglia 0.5. In questo modo i bordi della mask (che spesso attraversano
-    token parzialmente) vengono assegnati al lato maggioritario.
+    The pixel mask is downscaled to token resolution with area averaging
+    and then binarised at threshold 0.5, so mask boundaries that cross a
+    token partially are assigned to the majority side.
     """
     token_h = height // 16
     token_w = width // 16
@@ -227,7 +225,7 @@ def _calculate_shift(
     base_shift: float = 0.5,
     max_shift: float = 1.15,
 ) -> float:
-    """Stesso calcolo di diffusers.pipelines.flux.pipeline_flux."""
+    """Same shift computation as diffusers.pipelines.flux.pipeline_flux."""
     m = (max_shift - base_shift) / (max_seq_len - base_seq_len)
     b = base_shift - m * base_seq_len
     mu = image_seq_len * m + b
@@ -247,13 +245,14 @@ def masked_multi_path_denoise(
     edit_start_step: int,
     device: torch.device,
 ) -> Image.Image:
-    """Multi-path velocity-blend con N maschere disgiunte.
+    """Multi-path velocity blend with N disjoint masks.
 
     Args:
-        mask_pixels: list di N tensori shape (1, 1, H, W) in [0, 1].
-        mask_to_adapters: list di N tuple (adapter_names: List[str],
-            adapter_weights: List[float]) con gli slider attivi per
-            ciascuna regione.
+        mask_pixels: list of N tensors with shape ``(1, 1, H, W)`` and
+            values in ``[0, 1]``.
+        mask_to_adapters: list of N tuples ``(adapter_names: List[str],
+            adapter_weights: List[float])`` describing the sliders active
+            inside each region.
     """
     assert len(mask_pixels) == len(mask_to_adapters), \
         f"mask_pixels ({len(mask_pixels)}) != mask_to_adapters ({len(mask_to_adapters)})"
@@ -309,18 +308,19 @@ def masked_multi_path_denoise(
               f"adapters={mask_to_adapters[idx][0]} "
               f"scales={mask_to_adapters[idx][1]}")
 
-    # Avviso overlap (sum > 1 in qualche token = maschere sovrapposte)
+    # Mask overlap warning (sum > 1 means some tokens belong to more
+    # than one mask).
     if num_masks > 1:
         sum_masks = torch.zeros_like(masks_packed[0])
         for mp in masks_packed:
             sum_masks = sum_masks + mp
         n_overlap = int((sum_masks > 1).sum().item())
         if n_overlap > 0:
-            print(f"[phase3] WARNING: {n_overlap} token(s) hanno overlap "
-                  f"di maschere (sum>1). La formula assume maschere "
-                  f"disgiunte; nei token sovrapposti l'effetto e' la "
-                  f"somma additiva delle delta -- puo' produrre "
-                  f"saturazione. Verifica le maschere SAM.")
+            print(f"[phase3] WARNING: {n_overlap} token(s) belong to "
+                  f"more than one mask (sum>1). The blend formula assumes "
+                  f"disjoint masks; on overlapping tokens the effect is "
+                  f"the additive sum of deltas, which can saturate. "
+                  f"Check the SAM masks.")
 
     # ---- Prepare timesteps (Flux-specific shift) ----
     import numpy as _np
@@ -374,31 +374,32 @@ def masked_multi_path_denoise(
             pipe.disable_lora()
             v_base = _fwd(latents, timestep_in)
 
-            # Forward N volte (uno per maschera) con set_adapters
+            # One forward per mask with the corresponding adapter set
+            # active. PEFT.set_adapters([names], adapter_weights=[ws]) puts
+            # every named adapter into the active list and the forward
+            # sums their deltas, which is the compositional aggregation.
             v_styled_list = []
             for mask_idx in range(num_masks):
                 names, weights = mask_to_adapters[mask_idx]
                 pipe.enable_lora()
-                # set_adapters([n1,n2,...], weights=[w1,w2,...]):
-                # PEFT mette tutti gli adapter in active e somma le delta
-                # additivamente nel forward LoRA -- composizione paper-style.
                 pipe.set_adapters(list(names),
                                   adapter_weights=[float(w) for w in weights])
                 v_styled_list.append(_fwd(latents, timestep_in))
 
-            # Blend velocity: regione esterna a tutte le maschere = base,
-            # ogni regione mascherata = il suo v_styled (assumendo disjoint).
+            # Velocity blend: outside every mask stays on v_base; inside
+            # mask i we take v_styled_i (assumes disjoint masks).
             v_pred = v_base.clone()
             sum_masks = torch.zeros_like(masks_packed[0])
             for mask_idx in range(num_masks):
                 m = masks_packed[mask_idx]
                 v_pred = v_pred - m * v_base + m * v_styled_list[mask_idx]
                 sum_masks = sum_masks + m
-            # Equivalente a: v_pred = (1 - sum_masks) * v_base
+            # Equivalent to: v_pred = (1 - sum_masks) * v_base
             #                       + sum_i (mask_i * v_styled_i)
-            # quando le maschere sono disgiunte. Con overlap, la somma
-            # additiva delle delta nei token sovrapposti corrisponde alla
-            # composizione naturale (sopra abbiamo gia' avvertito).
+            # when the masks are disjoint. If they overlap, the additive
+            # sum of deltas on the overlapping tokens still corresponds to
+            # the natural compositional aggregation (overlap warning has
+            # already been emitted upstream).
 
         # Scheduler step (flow matching Euler)
         latents = pipe.scheduler.step(v_pred, t, latents, return_dict=False)[0]
@@ -439,15 +440,15 @@ def _normalize_args(args) -> Tuple[list, list, list, list, bool, bool]:
     has_mask_name = args.mask_name is not None
     has_slider_to_mask = args.slider_to_mask is not None
 
-    # Modalita': se l'utente usa una qualsiasi forma plural, va in multi.
+    # Mode selection: any plural flag activates multi-mode.
     is_multi = has_slider_paths or has_mask_names or has_slider_to_mask
 
     if is_multi:
         if has_slider_path or has_mask_name:
             raise ValueError(
                 "Mixing legacy (--slider_path/--mask_name) and multi "
-                "(--slider_paths/--mask_names/--slider_to_mask) e' ambiguo. "
-                "Usa SOLO una delle due forme."
+                "(--slider_paths/--mask_names/--slider_to_mask) is "
+                "ambiguous. Use ONE form or the other."
             )
         if not has_slider_paths:
             raise ValueError("Multi-mode richiede --slider_paths.")
@@ -464,32 +465,32 @@ def _normalize_args(args) -> Tuple[list, list, list, list, bool, bool]:
         n_masks = len(mask_names)
         if len(slider_to_mask) != n_sliders:
             raise ValueError(
-                f"--slider_to_mask ha {len(slider_to_mask)} valori, attesi "
-                f"{n_sliders} (uno per --slider_paths)."
+                f"--slider_to_mask has {len(slider_to_mask)} values, "
+                f"expected {n_sliders} (one per --slider_paths)."
             )
         for s_idx, m_idx in enumerate(slider_to_mask):
             if not (0 <= m_idx < n_masks):
                 raise ValueError(
-                    f"--slider_to_mask[{s_idx}]={m_idx} fuori range "
-                    f"[0, {n_masks}). Hai {n_masks} maschere."
+                    f"--slider_to_mask[{s_idx}]={m_idx} is out of range "
+                    f"[0, {n_masks}); there are {n_masks} masks."
                 )
         if args.slider_scales is None:
             raise ValueError(
-                "Multi-mode richiede --slider_scales (1 valore per slider)."
+                "Multi-mode requires --slider_scales (one value per slider)."
             )
         if len(args.slider_scales) != n_sliders:
             raise ValueError(
-                f"Multi-mode: --slider_scales ha {len(args.slider_scales)} "
-                f"valori, attesi {n_sliders} (uno per slider)."
+                f"Multi-mode: --slider_scales has {len(args.slider_scales)} "
+                f"values, expected {n_sliders} (one per slider)."
             )
-        # Ogni mask deve avere almeno 1 slider mappato
+        # Each mask must have at least one slider mapped to it.
         masks_used = set(slider_to_mask)
         for m in range(n_masks):
             if m not in masks_used:
                 raise ValueError(
-                    f"Maschera {m} ('{mask_names[m]}') non ha slider "
-                    f"associati. Aggiungi almeno uno slider che mappi a "
-                    f"questa mask o rimuovi la mask."
+                    f"Mask {m} ('{mask_names[m]}') has no slider mapped "
+                    f"to it. Add at least one slider that maps to this "
+                    f"mask, or remove the mask."
                 )
         return slider_paths, mask_names, slider_to_mask, [], True, False
 
@@ -539,9 +540,10 @@ def main() -> None:
     ).to(args.device)
 
     # ---- Load slider(s) as PEFT adapter(s) ----
-    # Convenzione nomi: default_0, default_1, ... allineata a shop_concept.
-    # Lo stesso file slider puo' essere caricato N volte come adapter
-    # distinti se serve applicarlo a maschere diverse con scale diverse.
+    # Adapter naming convention: default_0, default_1, ... aligned with
+    # shop_concept. The same slider file can be loaded multiple times as
+    # distinct adapters when it needs to be applied to several masks with
+    # different scales.
     print(f"[phase3] preparing {len(slider_paths)} slider(s)")
     slider_safetensors_list = [
         prepare_slider_as_safetensors(p, args.cache_dir) for p in slider_paths

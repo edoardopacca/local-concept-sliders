@@ -12,7 +12,7 @@
 # =============================================================================
 # eval_global_trial_v1.slurm
 # =============================================================================
-# Stessa struttura di eval_global_4sliders.slurm (stessi prompt, stesse scale)
+# Same structure as eval_global_4sliders.slurm (stessi prompt, stesse scale)
 # ma con i pesi trial_v1 (xattn, rank 16).
 # 4 slider × 8 scale × 2 prompt = 64 immagini totali.
 # =============================================================================

@@ -10,16 +10,14 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# two_subjects_smile_sweep.slurm — prova semplice con 2 soggetti
-# =============================================================================
-# Stesso setup del job sweep_smile_couple (che funzionava bene): coppia
-# man + woman, prompt minimal, 512x512, 30 steps. Slider smile applicato
-# a entrambi con scale opposte per testare l'asimmetria.
+# Simple 2-subject experiment: a man + woman couple, minimal prompt,
+# 512x512, 30 steps. The smile slider is applied to both subjects with
+# opposite scales to probe asymmetry.
 #
-# 3 immagini:
-#   1. baseline_zero    → man=0   woman=0
-#   2. plus1_minus1     → man=+1  woman=-1
-#   3. plus2_minus2     → man=+2  woman=-2
+# 3 images:
+#   1. baseline_zero    -> man=0   woman=0
+#   2. plus1_minus1     -> man=+1  woman=-1
+#   3. plus2_minus2     -> man=+2  woman=-2
 # =============================================================================
 
 set -euo pipefail
@@ -37,7 +35,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri (stessi del vecchio sweep_smile_couple che girava bene)
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 

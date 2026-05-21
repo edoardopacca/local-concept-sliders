@@ -13,7 +13,7 @@
 # eval_age_person_phase3.slurm  (Flux)
 # =============================================================================
 # FASE 3 — Applica il masked LoRA age_person su tutte e 20 le run.
-# Prerequisiti: base.png + metadata.json (fase 1) e mask_target.png (fase 2)
+# Requirements: base.png + metadata.json (fase 1) e mask_target.png (fase 2)
 #
 # Scale testate: 0.5  1.0  1.5
 #
@@ -80,8 +80,8 @@ for i in $(seq 1 20); do
 done
 
 echo "================================================================"
-echo "=== FASE 3 COMPLETATA: eval_age_person Flux                 ==="
+echo "=== FASE 3 COMPLETED: eval_age_person Flux                 ==="
 echo "================================================================"
-echo "Eseguire dopo:"
+echo "Run afterwards:"
 echo "  python metrics/eval_masked.py --concept age_person \\"
 echo "    --runs_root flux/tasks/masked_lora/runs --device cuda"

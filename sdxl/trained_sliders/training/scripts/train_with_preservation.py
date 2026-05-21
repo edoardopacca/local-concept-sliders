@@ -1,41 +1,15 @@
-# Modified training script for Concept Sliders with an explicit
-# preservation term on a second prompt set.
+# OBSOLETE — kept in-tree for archival purposes only.
 #
-# Relative to scripts/train.py (byte-identical to upstream
-# trainscripts/textsliders/train_lora_xl.py apart from sys.path), this
-# script:
-#
-#   1. Loads TWO prompt YAMLs:
-#        - prompts_file         → man entries, standard "enhance" loss
-#        - prompts_file_woman   → woman entries, preservation loss only
-#   2. At every iteration, samples one entry from each list.
-#   3. Runs the upstream enhance pass on the man entry exactly as before
-#      (denoise trajectory + positive/neutral/unconditional + target_with_LoRA).
-#   4. ADDITIONALLY runs a preservation pass on the woman entry:
-#        a. denoise trajectory with network ON, using woman target prompt
-#           (no-grad — the trajectory only establishes a sensible
-#            intermediate latent at which to compare eps with/without LoRA)
-#        b. eps_with_LoRA    = UNet + LoRA on this woman state (WITH grad)
-#        c. eps_without_LoRA = UNet with LoRA off on the same state (no grad)
-#        d. loss_preservation = MSE(eps_with_LoRA, eps_without_LoRA.detach())
-#   5. Combines the two losses:
-#        loss_total = loss_enhance_on_man + lambda_pres * loss_preservation_on_woman
-#      and backprops through loss_total.
-#
-# The intent is to force the LoRA to leave "woman"-activated UNet
-# features unchanged at every timestep, while still moving the "man"
-# activations along the smile direction. This addresses the CLIP
-# attribute-leak failure mode observed on v2_guidance4 (smile leaks onto
-# the woman at scales ≥ 2) by penalizing the exact quantity that causes
-# the leak — nonzero ΔW on woman activations — instead of relying on
-# prompt engineering (which failed empirically) or spatial masks
-# (rejected by design).
-#
-# Cost per iteration: ~2× vs upstream train.py. The preservation branch
-# adds one extra denoise trajectory, one extra no-grad forward pass, and
-# one extra with-grad forward pass on the UNet. lambda_pres is a CLI
-# knob (--lambda_pres, default 1.0) so we can sweep it without touching
-# YAML.
+# This script implemented an alternative training route that combined an
+# enhance loss on one prompt set with an explicit preservation loss on a
+# second prompt set, mixed via a CLI coefficient. It was developed as an
+# ablation while the project still framed concept-slider training as the
+# main contribution. The current paper proposes a single method —
+# external mask-guided localization of a LoRA adapter at inference time
+# (§4) — and no longer claims any contribution at the training stage.
+# All configs and prompt sets that drove this script have been removed;
+# the file itself is retained only so that historical commits referring
+# to it remain navigable. Do not invoke it for new runs.
 
 from typing import List, Optional
 import argparse

@@ -10,17 +10,15 @@
 #SBATCH --error=flux/tasks/shop_concept/logs/%x_%j.err
 
 # =============================================================================
-# three_subjects_smile_sweep_HQ.slurm — versione HIGH QUALITY del sweep
-# =============================================================================
-# Differenze vs three_subjects_smile_sweep.slurm:
-#   - 1024x1024 (era 512x512) → soggetti hanno ~3x più pixel, qualità decente
-#   - 50 inference steps (era 30) → più tempo ma più dettaglio
-#   - Time wall: 1h30 (era 45min) per le 3 generazioni
+# High-quality variant of three_subjects_smile_sweep.slurm:
+#   - 1024x1024 (was 512x512) so each subject has ~3x more pixels
+#   - 50 inference steps (was 30) for finer detail
+#   - wall time 1h30 (was 45min) for the 3 generations
 #
-# 3 immagini, scales:
-#   1. baseline_zero      → 0 / 0 / 0
-#   2. minus1_zero_plus1  → -1 / 0 / +1
-#   3. minus2_zero_minus2 → -2 / 0 / -2
+# 3 images, scales:
+#   1. baseline_zero      -> 0 / 0 / 0
+#   2. minus1_zero_plus1  -> -1 / 0 / +1
+#   3. minus2_zero_minus2 -> -2 / 0 / -2
 # =============================================================================
 
 set -euo pipefail
@@ -38,7 +36,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p flux/tasks/shop_concept/logs
 
 # -----------------------------------------------------------------------------
-# Parametri
+# Parameters
 # -----------------------------------------------------------------------------
 SLIDER="flux/trained_sliders/sliders/smile_flux_v5_symmetric_rank16_xattn_alpha1/flux-smile_flux_v5_symmetric/slider_0.pt"
 

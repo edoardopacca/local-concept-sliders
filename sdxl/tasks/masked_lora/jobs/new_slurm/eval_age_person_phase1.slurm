@@ -12,16 +12,16 @@
 # =============================================================================
 # eval_age_person_phase1.slurm
 # =============================================================================
-# FASE 1 — Genera 20 immagini base per il set di valutazione age_person.
+# PHASE 1 — Generate the 20 base images for the age_person evaluation
+# set. Phase 3 will apply the general age slider (age_person) to each
+# base image inside an externally-provided mask (§4 of the paper). The
+# prompts feature women so that the same masks can be reused with the
+# smile_person and curlyhair_person base sets (which share these
+# prompts and seeds; the base images are pixel-identical, the run
+# directories are split for clarity).
 #
-# Slider usato in fase 3: age_woman_sdxl_v1 (gender-specific, applicato solo
-# su immagini con almeno una donna).  Tutti i prompt contengono almeno una donna.
-#
-# Nota: curlyhair e smile_person usano gli STESSI prompt e semi → le immagini
-# base sono pixel-identiche; i run dir sono separati per chiarezza.
-#
-# Prerequisiti:
-#   - SDXL base model in cache HF
+# Requirements:
+#   - SDXL base model in HF cache
 #   - mkdir -p sdxl/tasks/masked_lora/runs  sdxl/tasks/masked_lora/logs
 #
 # Output: sdxl/tasks/masked_lora/runs/eval_age_person_{01..20}/
@@ -49,7 +49,8 @@ echo "================================================================"
 nvidia-smi
 echo ""
 
-# 20 (seed, prompt) — donne in tutti i prompt per lo slider age_woman
+# 20 (seed, prompt) pairs — every prompt features women so that the same
+# masks can be reused across age, smile and curlyhair evaluations.
 declare -a SEEDS=(
     1001 1002 1003 1004 1005
     1006 1007 1008 1009 1010
@@ -106,7 +107,7 @@ for i in "${!SEEDS[@]}"; do
 done
 
 echo "================================================================"
-echo "=== FASE 1 COMPLETATA: eval_age_person                      ==="
+echo "=== FASE 1 COMPLETED: eval_age_person                      ==="
 echo "================================================================"
 ls -lh "${OUTPUT_ROOT}/eval_age_person_01/"
 echo "Totale run dir: $(ls -d ${OUTPUT_ROOT}/eval_age_person_* | wc -l)"
