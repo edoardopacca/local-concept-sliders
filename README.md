@@ -1,5 +1,14 @@
 # Where to Apply — Code Release
 
+> **Environment / requirements at a glance.** The two backbones (SDXL
+> and Flux.1-dev) ship as **separate Python environments** with
+> dedicated lockfiles, because their `torch` / `diffusers` / `PEFT`
+> versions are mutually incompatible. The lockfiles live under each
+> backbone's training folder:
+> `sdxl/trained_sliders/training/requirements-sdxl.lock` and
+> `flux/trained_sliders/training/requirements-flux.lock`. See
+> [§Setup](#setup) below for the install commands.
+
 Reference implementation accompanying the project for the course
 **Deep Learning and Reinforcement Learning**,
 **"Where to Apply: Mask-Guided Localization of LoRA Adapter Effects in
@@ -26,7 +35,7 @@ Alongside the main method, the repository also bundles:
 Localization quality is evaluated with the region-aware LPIPS and CLIP
 variants defined in §5.1 (equations (2) and (3) of the paper).
 
-> 📦 **Note.** The hand-drawn SAM masks and the full set of generated
+> **Note.** The hand-drawn SAM masks and the full set of generated
 > evaluation images are **not committed to this repository** because of
 > their size. The **quantitative results** derived from them are
 > committed under [`metrics/results_*/`](metrics/), and the
@@ -60,7 +69,7 @@ The repository mirrors the two backbones under `sdxl/` and `flux/`, with a share
 mask-extraction stage under `mask_SAM/` and a shared evaluation stage under `metrics/`.
 
 ```
-local-concept-sliders/
+masked-lora-sliders/
 ├── sdxl/                                # SDXL base 1.0 stack
 │   ├── core/                            # Concept-Sliders LoRA core (adapted)
 │   │   ├── lora.py                      # LoRANetwork / LoRAModule

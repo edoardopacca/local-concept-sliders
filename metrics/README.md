@@ -13,9 +13,10 @@ metrics/
 ├── eval_masked.py             # LPIPS_LOC / CLIP_LOC for the external mask-guided experiments
 ├── summarize_masked.py        # per-concept LPIPS_LOC / CLIP_LOC medians
 ├── select_best_runs.py        # pick top-k qualitative samples per concept
-├── clip_score.py              # CLIP scoring helpers, used internally
-├── lpip_score.py              # LPIPS scoring helpers, used internally
-├── generate_images_*.py       # baseline / reference generation scripts inherited
+├── legacy/                    # upstream Concept Sliders scripts, kept for reference
+│   ├── clip_score.py          # CLIP scoring helpers (not used by the paper experiments)
+│   ├── lpip_score.py          # LPIPS scoring helpers (not used by the paper experiments)
+│   └── generate_images_*.py   # baseline / reference generation scripts inherited
 │                              # from the upstream Concept Sliders codebase
 ├── results_sdxl_masked/       # per-concept CSV + aggregate JSON (paper tab:appendix:results-masked-sdxl)
 └── results_flux_masked/       # per-concept CSV + aggregate JSON (paper tab:appendix:results-masked-flux)
@@ -40,10 +41,11 @@ i.e. they compare the inside-mask change against the outside-mask
 change on the same image pair — the higher the score, the more the
 LoRA effect was confined to the intended region.
 
-The `generate_images_*.py` scripts are inherited from the upstream
-Concept Sliders codebase
+The `legacy/` subdirectory bundles the `generate_images_*.py`,
+`clip_score.py` and `lpip_score.py` scripts inherited from the
+upstream Concept Sliders codebase
 ([rohitgandikota/sliders](https://github.com/rohitgandikota/sliders),
-MIT licensed); they are not used by the paper experiments but are
+MIT licensed). They are not used by the paper experiments but are
 kept here for compatibility with downstream comparisons.
 
 ## Usage

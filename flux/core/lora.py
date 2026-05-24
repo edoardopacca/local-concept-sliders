@@ -1,6 +1,10 @@
-# ref:
-# - https://github.com/cloneofsimo/lora/blob/master/lora_diffusion/lora.py
-# - https://github.com/kohya-ss/sd-scripts/blob/main/networks/lora.py
+# upstream: ported to Flux from https://github.com/rohitgandikota/sliders
+# (Concept Sliders, Gandikota et al., 2023), which in turn adapts:
+#   - https://github.com/cloneofsimo/lora/blob/master/lora_diffusion/lora.py
+#   - https://github.com/kohya-ss/sd-scripts/blob/main/networks/lora.py
+# Style and inline comments (including the original Japanese annotations
+# from kohya-ss) are preserved verbatim to ease diffing against upstream.
+# This file is not a contribution of this work; see top-level README §Acknowledgments.
 
 import os
 import math

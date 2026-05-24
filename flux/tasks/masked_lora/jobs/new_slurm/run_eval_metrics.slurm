@@ -21,7 +21,7 @@
 #   sbatch --export=CONCEPT=smile_person \
 #     flux/tasks/masked_lora/jobs/new_slurm/run_eval_metrics.slurm
 #
-# Output: metrics/results/{concept}/eval_results.csv + eval_aggregate.json
+# Output: metrics/results_flux_masked/{concept}/eval_results.csv + eval_aggregate.json
 # =============================================================================
 
 set -euo pipefail

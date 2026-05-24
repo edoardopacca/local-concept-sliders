@@ -8,8 +8,8 @@ Computes per (run, scale):
 
 Saves:
   - per-run:      runs/eval_{concept}_{id}/eval_metrics_s{scale}.json
-  - per-concept:  metrics/results/{concept}/eval_results.csv
-  - aggregate:    metrics/results/{concept}/eval_aggregate.json
+  - per-concept:  metrics/results_sdxl_masked/{concept}/eval_results.csv
+  - aggregate:    metrics/results_sdxl_masked/{concept}/eval_aggregate.json
 
 Usage (GPU recommended):
   python metrics/eval_masked.py --concept age_person --runs_root sdxl/tasks/masked_lora/runs
@@ -53,7 +53,7 @@ CONCEPT_EDIT_PROMPT: Dict[str, str] = {
 
 
 DEFAULT_RUNS_ROOT = "sdxl/tasks/masked_lora/runs"
-DEFAULT_OUTPUT_DIR = "metrics/results"
+DEFAULT_OUTPUT_DIR = "metrics/results_sdxl_masked"
 CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 
